@@ -1,0 +1,10 @@
+{
+	"profiles": {
+		"JumpListManager (Package)": {
+			"commandName": "MsixPackage"
+		},
+		"JumpListManager (Unpackaged)": {
+			"commandName": "Project"
+		}
+	}
+}

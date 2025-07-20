@@ -1,0 +1,292 @@
+<!--  Copyright (c) 0x5BFA. Licensed under the MIT License.  -->
+<Page
+	x:Class="JumpListManager.Views.MainPage"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:data="using:JumpListManager.Data"
+	xmlns:extensions="using:JumpListManager.WinUI.Extensions"
+	xmlns:local="using:JumpListManager"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:wctconverters="using:CommunityToolkit.WinUI.Converters"
+	mc:Ignorable="d">
+
+	<Page.Resources>
+
+		<wctconverters:EmptyCollectionToObjectConverter
+			x:Key="EmptyCollectionToNegateVisibilityConverter"
+			EmptyValue="Visible"
+			NotEmptyValue="Collapsed" />
+
+		<data:CommandItemTemplateSelector
+			x:Key="CommandItemTemplateSelector"
+			CommandButtonTemplate="{StaticResource CommandButtonItemTemplate}"
+			CommandSeparatorTemplate="{StaticResource CommandSeparatorItemTemplate}" />
+
+		<DataTemplate x:Key="CommandButtonItemTemplate" x:DataType="data:CommandButtonItem">
+			<Button
+				Margin="0,0,0,4"
+				HorizontalAlignment="Stretch"
+				HorizontalContentAlignment="Left"
+				Background="Transparent"
+				BorderThickness="0">
+				<Grid ColumnSpacing="8">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="*" />
+					</Grid.ColumnDefinitions>
+					<FontIcon
+						Grid.Column="0"
+						FontSize="16"
+						Glyph="{x:Bind Glyph}" />
+					<TextBlock
+						Grid.Column="1"
+						Text="{x:Bind Label}"
+						TextTrimming="CharacterEllipsis"
+						TextWrapping="NoWrap" />
+				</Grid>
+			</Button>
+		</DataTemplate>
+
+		<DataTemplate x:Key="CommandSeparatorItemTemplate" x:DataType="data:CommandSeparatorItem">
+			<Rectangle
+				Height="1"
+				Margin="0,0,0,4"
+				Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+		</DataTemplate>
+
+	</Page.Resources>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="40" />
+			<RowDefinition Height="*" />
+		</Grid.RowDefinitions>
+
+		<StackPanel Grid.Row="0" Orientation="Horizontal">
+			<TextBlock
+				Margin="24,0"
+				VerticalAlignment="Center"
+				Text="Jump List Viewer" />
+		</StackPanel>
+
+		<Grid Grid.Row="1">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="Auto" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+
+			<Grid Grid.Column="0">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="*" />
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
+				</Grid.RowDefinitions>
+
+				<ListView
+					x:Name="ApplicationItemsListView"
+					Width="300"
+					Padding="8,0,8,12"
+					ItemsSource="{x:Bind ViewModel.ApplicationItems}"
+					SelectedIndex="{x:Bind ViewModel.SelectedIndexOfApplicationItems, Mode=TwoWay}"
+					SelectionChanged="ApplicationItemsListView_SelectionChanged">
+					<ListView.ItemTemplate>
+						<DataTemplate x:DataType="data:ApplicationItem">
+							<Grid
+								Padding="0,8"
+								ColumnSpacing="12"
+								RowSpacing="2">
+								<Grid.RowDefinitions>
+									<RowDefinition Height="Auto" />
+									<RowDefinition Height="Auto" />
+								</Grid.RowDefinitions>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto" />
+									<ColumnDefinition Width="*" />
+								</Grid.ColumnDefinitions>
+								<Viewbox
+									Grid.Row="0"
+									Grid.RowSpan="2"
+									Grid.Column="0"
+									Width="32"
+									Height="32">
+									<Image VerticalAlignment="Center" extensions:ImageExtensions.ImageSource="{x:Bind Icon}" />
+								</Viewbox>
+								<TextBlock
+									Grid.Row="0"
+									Grid.Column="1"
+									Text="{x:Bind Name}"
+									TextTrimming="CharacterEllipsis"
+									TextWrapping="NoWrap" />
+								<TextBlock
+									Grid.Row="1"
+									Grid.Column="1"
+									Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+									Style="{StaticResource CaptionTextBlockStyle}"
+									Text="{x:Bind AppUserModelID}"
+									TextTrimming="CharacterEllipsis"
+									TextWrapping="NoWrap" />
+							</Grid>
+						</DataTemplate>
+					</ListView.ItemTemplate>
+				</ListView>
+
+				<Rectangle
+					Grid.Row="1"
+					Height="1"
+					Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+				<Button
+					Grid.Row="2"
+					Margin="12,8,12,8"
+					HorizontalAlignment="Stretch"
+					HorizontalContentAlignment="Left"
+					Background="Transparent"
+					BorderThickness="0"
+					Command="{x:Bind ViewModel.OpenAboutDialogCommand}">
+					<StackPanel Orientation="Horizontal" Spacing="8">
+						<FontIcon FontSize="16" Glyph="&#xE946;" />
+						<TextBlock Text="About" />
+					</StackPanel>
+				</Button>
+
+			</Grid>
+
+			<Grid
+				Grid.Column="1"
+				Padding="36"
+				Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+				BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+				BorderThickness="1,1,0,0"
+				ColumnSpacing="24"
+				CornerRadius="8,0,0,0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="240" />
+				</Grid.ColumnDefinitions>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="*" />
+				</Grid.RowDefinitions>
+
+				<Grid
+					x:Name="SelectedApplicationDetailsGrid"
+					Grid.Row="0"
+					Grid.Column="0"
+					Grid.ColumnSpan="2">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto" />
+						<RowDefinition Height="Auto" />
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="*" />
+					</Grid.ColumnDefinitions>
+					<Viewbox
+						Grid.Row="0"
+						Grid.RowSpan="2"
+						Grid.Column="0"
+						Width="64"
+						Height="64"
+						Margin="0,0,20,0">
+						<Image VerticalAlignment="Center" extensions:ImageExtensions.ImageSource="{x:Bind ((data:ApplicationItem)ApplicationItemsListView.SelectedItem).Icon, Mode=OneWay}" />
+					</Viewbox>
+					<TextBlock
+						Grid.Row="0"
+						Grid.Column="1"
+						IsTextSelectionEnabled="True"
+						Style="{StaticResource TitleTextBlockStyle}"
+						Text="{x:Bind ((data:ApplicationItem)ApplicationItemsListView.SelectedItem).Name, Mode=OneWay}"
+						TextTrimming="CharacterEllipsis"
+						TextWrapping="NoWrap" />
+					<TextBlock
+						Grid.Row="1"
+						Grid.Column="1"
+						Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+						IsTextSelectionEnabled="True"
+						Style="{StaticResource BodyTextBlockStyle}"
+						Text="{x:Bind ((data:ApplicationItem)ApplicationItemsListView.SelectedItem).AppUserModelID, Mode=OneWay}"
+						TextTrimming="CharacterEllipsis"
+						TextWrapping="NoWrap" />
+				</Grid>
+
+				<ListView
+					x:Name="JumpListListView"
+					Grid.Row="1"
+					Grid.Column="0"
+					Margin="-16,0"
+					ItemsSource="{x:Bind ViewModel.JumpListItems.View, Mode=OneWay}"
+					ScrollViewer.VerticalScrollBarVisibility="Hidden"
+					SelectedIndex="{x:Bind ViewModel.SelectedIndexOfJumpListItems, Mode=TwoWay}"
+					SelectionChanged="JumpListListView_SelectionChanged">
+					<ListView.ItemsPanel>
+						<ItemsPanelTemplate>
+							<ItemsStackPanel AreStickyGroupHeadersEnabled="True" />
+						</ItemsPanelTemplate>
+					</ListView.ItemsPanel>
+
+					<ListView.ItemTemplate>
+						<DataTemplate x:DataType="local:JumpListItem">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="Auto" />
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="Auto" />
+								</Grid.ColumnDefinitions>
+								<Viewbox Width="18" Height="18">
+									<Image extensions:ImageExtensions.ImageSource="{x:Bind IconData}" />
+								</Viewbox>
+								<TextBlock
+									Grid.Column="1"
+									Margin="12,0"
+									Text="{Binding Text}"
+									TextTrimming="CharacterEllipsis"
+									TextWrapping="NoWrap" />
+							</Grid>
+						</DataTemplate>
+					</ListView.ItemTemplate>
+
+					<ListView.GroupStyle>
+						<GroupStyle>
+							<GroupStyle.HeaderTemplate>
+								<DataTemplate x:DataType="local:JumpListGroupItem">
+									<Border>
+										<TextBlock
+											Margin="4,0"
+											VerticalAlignment="Center"
+											Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+											Style="{ThemeResource BodyStrongTextBlockStyle}"
+											Text="{x:Bind Key}" />
+									</Border>
+								</DataTemplate>
+							</GroupStyle.HeaderTemplate>
+						</GroupStyle>
+					</ListView.GroupStyle>
+
+				</ListView>
+
+				<ItemsControl
+					x:Name="CommandItemsControl"
+					Grid.Row="1"
+					Grid.Column="1"
+					HorizontalAlignment="Stretch"
+					ItemTemplateSelector="{StaticResource CommandItemTemplateSelector}"
+					ItemsSource="{x:Bind ViewModel.CommandItems}" />
+
+				<TextBlock
+					x:Name="NoJumpListAvailableTextBlock"
+					Grid.Row="0"
+					Grid.RowSpan="2"
+					Grid.Column="0"
+					Grid.ColumnSpan="2"
+					HorizontalAlignment="Center"
+					VerticalAlignment="Center"
+					Style="{StaticResource BodyStrongTextBlockStyle}"
+					Text="No jump list available."
+					Visibility="{x:Bind ViewModel.JumpListItems.View, Converter={StaticResource EmptyCollectionToNegateVisibilityConverter}, Mode=OneWay}" />
+
+			</Grid>
+
+		</Grid>
+	</Grid>
+</Page>

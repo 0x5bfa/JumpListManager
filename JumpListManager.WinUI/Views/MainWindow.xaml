@@ -1,0 +1,14 @@
+<!--  Copyright (c) 0x5BFA. Licensed under the MIT License.  -->
+<Window
+	x:Class="JumpListManager.Views.MainWindow"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:local="using:JumpListManager"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	Title="Jump List Viewer"
+	mc:Ignorable="d">
+	<Window.SystemBackdrop>
+		<MicaBackdrop />
+	</Window.SystemBackdrop>
+</Window>
