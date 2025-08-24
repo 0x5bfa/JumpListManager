@@ -250,15 +250,29 @@ namespace JumpListManager
 
 		public bool PinItem(JumpListItem item)
 		{
-			HRESULT hr = default;
-
 			if (item is null || item.IsPinned || item.Type is not JumpListItemType.Automatic or JumpListItemType.Custom)
 				return false;
 
-			hr = _autoDestListPtr->PinItem((IUnknown*)item.NativeObjectPtr, -1);
+			HRESULT hr = default;
+
+			hr = _autoDestListPtr->PinItem((IUnknown*)item.NativeObjectPtr, -1 /*Pin at the last*/);
 			if (FAILED(hr)) return false;
 
 			item.IsPinned = true;
+			return true;
+		}
+
+		public bool UnpinItem(JumpListItem item)
+		{
+			if (item is null || !item.IsPinned || item.Type is not JumpListItemType.Automatic or JumpListItemType.Custom)
+				return false;
+
+			HRESULT hr = default;
+
+			hr = _autoDestListPtr->PinItem((IUnknown*)item.NativeObjectPtr, -2 /*Unpin*/);
+			if (FAILED(hr)) return false;
+
+			item.IsPinned = false;
 			return true;
 		}
 

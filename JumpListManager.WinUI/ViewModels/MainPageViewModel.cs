@@ -136,7 +136,7 @@ namespace JumpListManager.ViewModels
 
 				if (selectedJumpListItem.IsPinned)
 				{
-					CommandItems.Add(new CommandButtonItem("\uE718", "Unpin from the list", null));
+					CommandItems.Add(new CommandButtonItem("\uE718", "Unpin from the list", new RelayCommand(ExecuteUnpinItemCommand)));
 				}
 				else
 				{
@@ -156,11 +156,24 @@ namespace JumpListManager.ViewModels
 			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
 			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
 
-			// Initialize the jump list manager
 			using JumpList manager = JumpList.Create(amuid)
 				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
 
 			manager.PinItem(selectedJumpListItem);
+
+			EnumerateJumpListItems();
+		}
+
+		private void ExecuteUnpinItemCommand()
+		{
+			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
+			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
+
+			using JumpList manager = JumpList.Create(amuid)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			manager.UnpinItem(selectedJumpListItem);
 
 			EnumerateJumpListItems();
 		}

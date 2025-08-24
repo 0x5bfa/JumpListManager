@@ -61,7 +61,7 @@ namespace Windows.Win32.System.Com
 		/// Pins an item to the list.
 		/// </summary>
 		/// <param name="pObject">The native object to pin to the list.</param>
-		/// <param name="pinIndex">-1 to pin to the last, -2 to unpin, zero or positive numbers (>= 0) indicate the index to pin to the list at. Other numbers are not handled *at all*.</param>
+		/// <param name="pinIndex">-1 to pin to the last, -2 to unpin, zero or positive numbers (>= 0) indicate the index to pin to the list at. Passing the other numbers are *UB*.</param>
 		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public HRESULT PinItem(IUnknown* pObject, int pinIndex)
