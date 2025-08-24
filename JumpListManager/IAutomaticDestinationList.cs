@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Windows.Win32.Foundation;
+using Windows.Win32.UI.Shell;
 
 namespace Windows.Win32.System.Com
 {
@@ -84,6 +85,33 @@ namespace Windows.Win32.System.Com
 		public HRESULT GetPinIndex(IUnknown* pObj, int* pIndex)
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*, int*, int>)lpVtbl[8])
 				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), pObj, pIndex);
+
+		/// <summary>
+		/// Removes a destination from the automatic destinations list.
+		/// </summary>
+		/// <param name="psi">The destination to remove from the automatic destinations list.</param>
+		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise.
+		public HRESULT RemoveDestination(IUnknown* psi)
+			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*, int>)lpVtbl[9])
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), psi);
+
+		public HRESULT SetUsageData(IUnknown* pItem, float* a2, long* pFileTime)
+			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*,float*, long*, int>)lpVtbl[10])
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), pItem, a2, pFileTime);
+
+		public HRESULT GetUsageData(IUnknown* pItem, float* a2, long* pFileTime)
+			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*, float*, long*, int>)lpVtbl[11])
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), pItem, a2, pFileTime);
+
+		public HRESULT ResolveDestination(HWND hWnd, int a2, IShellItem* pShellItem, Guid* riid, void** ppvObject)
+			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, HWND, int, IShellItem*, Guid*, void**, int>)lpVtbl[12])
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), hWnd, a2, pShellItem, riid, ppvObject);
+
+		public HRESULT ClearList(int iListType)
+			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, int, int>)lpVtbl[13])
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), iListType);
+
+
 
 		[GuidRVAGen.Guid("E9C5EF8D-FD41-4F72-BA87-EB03BAD5817C")]
 		public static partial ref readonly Guid Guid { get; }

@@ -250,7 +250,7 @@ namespace JumpListManager
 
 		public bool PinItem(JumpListItem item)
 		{
-			if (item is null || item.IsPinned || item.Type is not JumpListItemType.Automatic or JumpListItemType.Custom)
+			if (item is null || item.IsPinned || item.Type is JumpListItemType.Task)
 				return false;
 
 			HRESULT hr = default;
@@ -264,7 +264,7 @@ namespace JumpListManager
 
 		public bool UnpinItem(JumpListItem item)
 		{
-			if (item is null || !item.IsPinned || item.Type is not JumpListItemType.Automatic or JumpListItemType.Custom)
+			if (item is null || !item.IsPinned || item.Type is JumpListItemType.Task)
 				return false;
 
 			HRESULT hr = default;
@@ -273,6 +273,27 @@ namespace JumpListManager
 			if (FAILED(hr)) return false;
 
 			item.IsPinned = false;
+			return true;
+		}
+
+		public bool RemoveItem(JumpListItem item)
+		{
+			if (item is null || item.Type is JumpListItemType.Task)
+				return false;
+
+			HRESULT hr = default;
+
+			if (item.Type is JumpListItemType.Automatic)
+			{
+				hr = _autoDestListPtr->RemoveDestination((IUnknown*)item.NativeObjectPtr);
+				if (FAILED(hr)) return false;
+			}
+			else if (item.Type is JumpListItemType.Custom)
+			{
+				hr = _customDestList2Ptr->RemoveDestination((IUnknown*)item.NativeObjectPtr);
+				if (FAILED(hr)) return false;
+			}
+
 			return true;
 		}
 

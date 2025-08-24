@@ -29,6 +29,27 @@ namespace JumpListManager.ViewModels
 
 		public int SelectedIndexOfJumpListItems { get; set; } = 0;
 
+		public JumpListItem? SelectedJumpListItem
+		{
+			get
+			{
+				if (SelectedIndexOfJumpListItems is -1)
+					return null;
+				var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
+				return flattenItems.ElementAt(SelectedIndexOfJumpListItems);
+			}
+		}
+
+		public string? SelectedApplicationUserModelID
+		{
+			get
+			{
+				if (SelectedIndexOfApplicationItems is -1)
+					return null;
+				return ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+			}
+		}
+
 		public ICommand OpenAboutDialogCommand { get; }
 
 		public MainPageViewModel()
@@ -141,7 +162,7 @@ namespace JumpListManager.ViewModels
 				else
 				{
 					CommandItems.Add(new CommandButtonItem("\uE718", "Pin to the list", new RelayCommand(ExecutePinItemCommand)));
-					CommandItems.Add(new CommandButtonItem("\uE74D", "Remove from the list", null));
+					CommandItems.Add(new CommandButtonItem("\uE74D", "Remove from the list", new RelayCommand(ExecuteRemoveItemCommand)));
 				}
 
 				CommandItems.Add(new CommandSeparatorItem());
@@ -174,6 +195,16 @@ namespace JumpListManager.ViewModels
 				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
 
 			manager.UnpinItem(selectedJumpListItem);
+
+			EnumerateJumpListItems();
+		}
+
+		private void ExecuteRemoveItemCommand()
+		{
+			using JumpList manager = JumpList.Create(SelectedApplicationUserModelID!)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			manager.RemoveItem(SelectedJumpListItem!);
 
 			EnumerateJumpListItems();
 		}
