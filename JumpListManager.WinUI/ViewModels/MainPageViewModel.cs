@@ -140,7 +140,7 @@ namespace JumpListManager.ViewModels
 				}
 				else
 				{
-					CommandItems.Add(new CommandButtonItem("\uE718", "Pin to the list", null));
+					CommandItems.Add(new CommandButtonItem("\uE718", "Pin to the list", new RelayCommand(ExecutePinItemCommand)));
 					CommandItems.Add(new CommandButtonItem("\uE74D", "Remove from the list", null));
 				}
 
@@ -148,6 +148,21 @@ namespace JumpListManager.ViewModels
 
 				CommandItems.Add(new CommandButtonItem("\uE90F", "Properties", null));
 			}
+		}
+
+		private void ExecutePinItemCommand()
+		{
+			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
+			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
+
+			// Initialize the jump list manager
+			using JumpList manager = JumpList.Create(amuid)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			manager.PinItem(selectedJumpListItem);
+
+			EnumerateJumpListItems();
 		}
 
 		private async Task ExecuteOpenAboutDialogCommand()

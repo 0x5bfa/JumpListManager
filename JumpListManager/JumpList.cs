@@ -215,7 +215,7 @@ namespace JumpListManager
 			if (dwCategoryCount is -1)
 				return null;
 
-			JumpListGroupItem groupedCollection = new() { Key = string.Empty };
+			JumpListGroupItem groupedCollection = new() { Key = "Tasks" };
 
 			for (uint dwCategoryIndex = 0U; dwCategoryIndex < (uint)dwCategoryCount; dwCategoryIndex++)
 			{
@@ -246,6 +246,20 @@ namespace JumpListManager
 			}
 
 			return null;
+		}
+
+		public bool PinItem(JumpListItem item)
+		{
+			HRESULT hr = default;
+
+			if (item is null || item.IsPinned || item.Type is not JumpListItemType.Automatic or JumpListItemType.Custom)
+				return false;
+
+			hr = _autoDestListPtr->PinItem((IUnknown*)item.NativeObjectPtr, -1);
+			if (FAILED(hr)) return false;
+
+			item.IsPinned = true;
+			return true;
 		}
 
 		private IEnumerable<JumpListItem> CreateCollectionFromIObjectCollection(JumpListItemType type, IObjectCollection* pObjectCollection)
@@ -311,7 +325,7 @@ namespace JumpListManager
 					IShellLinkW* pShellLinkGlobal = null;
 					pShellLink.CopyTo(&pShellLinkGlobal);
 
-					return new(type, bitmapImageData, new string(pVar.Anonymous.Anonymous.Anonymous.pwszVal), IsPinned((IUnknown*)pShellLink.Get()), JumpListDataType.IShellLink, (IUnknown*)pShellLinkGlobal);
+					return new(type, bitmapImageData, new string(pVar.Anonymous.Anonymous.Anonymous.pwszVal), IsPinned((IUnknown*)pShellLinkGlobal), JumpListDataType.IShellLink, (IUnknown*)pShellLinkGlobal);
 				}
 				else
 				{

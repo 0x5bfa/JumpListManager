@@ -29,7 +29,8 @@
 				HorizontalAlignment="Stretch"
 				HorizontalContentAlignment="Left"
 				Background="Transparent"
-				BorderThickness="0">
+				BorderThickness="0"
+				Command="{x:Bind Command}">
 				<Grid ColumnSpacing="8">
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="Auto" />
