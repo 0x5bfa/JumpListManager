@@ -1,7 +1,6 @@
 ﻿// Copyright (c) 0x5BFA. All rights reserved.
 // Licensed under the MIT License.
 
-using System;
 using System.Runtime.CompilerServices;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.Shell;
@@ -61,30 +60,30 @@ namespace Windows.Win32.System.Com
 		/// <summary>
 		/// Pins an item to the list.
 		/// </summary>
-		/// <param name="pObject">The native object to pin to the list.</param>
-		/// <param name="pinIndex">-1 to pin to the last, -2 to unpin, zero or positive numbers (>= 0) indicate the index to pin to the list at. Passing the other numbers are *UB*.</param>
+		/// <param name="punk">The native object to pin to the list.</param>
+		/// <param name="index">-1 to pin to the last, -2 to unpin, zero or positive numbers (>= 0) indicate the index to pin to the list at. Passing the other numbers are *UB*.</param>
 		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT PinItem(IUnknown* pObject, int pinIndex)
+		public HRESULT PinItem(IUnknown* punk, int index)
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*, int, int>)lpVtbl[7])
-				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), pObject, pinIndex);
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), punk, index);
 
 		/// <summary>
 		/// Gets the index of a pinned item in the Pinned list.
 		/// </summary>
-		/// <param name="pObj">The native object to get its index in the list.</param>
-		/// <param name="pIndex">A pointer that points to an int value that takes the index of the item passed.</param>
-		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise.
-		/// If the passed item doesn't belong to the Pinned list, HRESULT.E_NOT_SET is returned.</returns>
-		// NOTE:
-		//  According to the debug symbols, this method is called "IsPinned" and other definitions out there also define so
-		//  but it is inappropriate based on the fact it actually calls an internal method that gets the index of a pinned item
-		//  and returns it in the second argument. If you want to check if an item is pinned, you should use IShellItem::Compare for IShellItem,
-		//  or compare IShellLinkW::GetPath, IShellLinkW::GetArguments and PKEY_Title for IShellLinkW, which is actually done, at least, in Windows 7 era.
+		/// <remarks>
+		/// According to the debug symbols, this method is called "IsPinned" and other definitions out there also define so
+		/// but it is inappropriate based on the fact it actually calls an internal method that gets the index of a pinned item
+		/// and returns it in the second argument. If you want to check if an item is pinned, you should use IShellItem::Compare for IShellItem,
+		/// or compare IShellLinkW::GetPath, IShellLinkW::GetArguments and PKEY_Title for IShellLinkW, which is actually done, at least, in Windows 7 era.
+		/// </remarks>
+		/// <param name="punk">The native object to get its index in the list.</param>
+		/// <param name="piIndex">A pointer that points to an int value that takes the index of the item passed.</param>
+		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise. If the passed item doesn't belong to the <see cref="DESTLISTTYPE.PINNED"/> list, HRESULT.E_NOT_SET is returned.</returns>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT GetPinIndex(IUnknown* pObj, int* pIndex)
+		public HRESULT GetPinIndex(IUnknown* punk, int* piIndex)
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*, int*, int>)lpVtbl[8])
-				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), pObj, pIndex);
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), punk, piIndex);
 
 		/// <summary>
 		/// Removes a destination from the automatic destinations list.
@@ -110,8 +109,6 @@ namespace Windows.Win32.System.Com
 		public HRESULT ClearList(int iListType)
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, int, int>)lpVtbl[13])
 				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), iListType);
-
-
 
 		[GuidRVAGen.Guid("E9C5EF8D-FD41-4F72-BA87-EB03BAD5817C")]
 		public static partial ref readonly Guid Guid { get; }

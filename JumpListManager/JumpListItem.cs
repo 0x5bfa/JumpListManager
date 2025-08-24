@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using Windows.Win32.System.Com;
+using Windows.Win32.UI.Shell;
 
 namespace JumpListManager
 {
@@ -22,6 +23,12 @@ namespace JumpListManager
 			get => field;
 			set { field = value; ((IUnknown*)field)->AddRef(); }
 		} = nativeObjectPtr;
+
+		public IContextMenu* ContextMenuPtr
+		{
+			get => field;
+			set { field = value; }
+		}
 
 		public void Dispose()
 		{

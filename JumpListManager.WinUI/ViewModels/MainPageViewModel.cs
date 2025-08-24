@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using JumpListManager.Data;
 using Microsoft.UI.Xaml.Data;
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -13,6 +14,7 @@ using Windows.Win32.System.Com;
 using Windows.Win32.System.Com.StructuredStorage;
 using Windows.Win32.UI.Shell;
 using Windows.Win32.UI.Shell.PropertiesSystem;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace JumpListManager.ViewModels
 {
@@ -144,13 +146,14 @@ namespace JumpListManager.ViewModels
 			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
 			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
 
-			CommandItems.Add(new CommandButtonItem("\uE737", "Open", null));
+			CommandItems.Add(new CommandButtonItem("\uE737", "Open", new RelayCommand(ExecuteOpenCommand)));
 
 			if (selectedJumpListItem.Type is not JumpListItemType.Task)
 			{
-				if (selectedJumpListItem.DataType is JumpListDataType.IShellItem)
+				if (selectedJumpListItem.Type is JumpListItemType.Automatic &&
+					selectedJumpListItem.DataType is JumpListDataType.IShellItem)
 				{
-					CommandItems.Add(new CommandButtonItem("\uED43", "Open file location", null));
+					CommandItems.Add(new CommandButtonItem("\uED43", "Open file location", new RelayCommand(ExecuteOpenFileLocationCommand)));
 				}
 
 				CommandItems.Add(new CommandSeparatorItem());
@@ -165,10 +168,21 @@ namespace JumpListManager.ViewModels
 					CommandItems.Add(new CommandButtonItem("\uE74D", "Remove from the list", new RelayCommand(ExecuteRemoveItemCommand)));
 				}
 
-				CommandItems.Add(new CommandSeparatorItem());
+				if (selectedJumpListItem.Type is JumpListItemType.Automatic)
+				{
+					CommandItems.Add(new CommandSeparatorItem());
 
-				CommandItems.Add(new CommandButtonItem("\uE90F", "Properties", null));
+					CommandItems.Add(new CommandButtonItem("\uE90F", "Properties", new RelayCommand(ExecuteOpenPropertiesCommand)));
+				}
 			}
+		}
+
+		private void ExecuteOpenCommand()
+		{
+		}
+
+		private void ExecuteOpenFileLocationCommand()
+		{
 		}
 
 		private void ExecutePinItemCommand()
@@ -207,6 +221,21 @@ namespace JumpListManager.ViewModels
 			manager.RemoveItem(SelectedJumpListItem!);
 
 			EnumerateJumpListItems();
+		}
+
+		private unsafe void ExecuteOpenPropertiesCommand()
+		{
+			//SHELLEXECUTEINFOW info = default;
+			//info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
+			//info.lpVerb = "properties";
+			//info.lpFile = Filename;
+			//info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOW;
+			//info.fMask = PInvoke.SEE_MASK_INVOKEIDLIST;
+
+			//fixed (char* pwszVerb = "properties", pwszFilePath = "")
+			//{
+			//	PInvoke.ShellExecuteEx(&info);
+			//}
 		}
 
 		private async Task ExecuteOpenAboutDialogCommand()
