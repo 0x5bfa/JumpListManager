@@ -40,6 +40,9 @@ namespace Windows.Win32
 
 		[GuidRVAGen.Guid("BB2E617C-0920-11D1-9A0B-00C04FC2D6C1")]
 		public static partial Guid* IID_IExtractImage { get; }
+
+		[GuidRVAGen.Guid("000214E4-0000-0000-C000-000000000046")]
+		public static partial Guid* IID_IContextMenu { get; }
 	}
 
 	public static unsafe partial class CLSID
@@ -53,6 +56,9 @@ namespace Windows.Win32
 
 	public static unsafe partial class BHID
 	{
+		[GuidRVAGen.Guid("3981E225-F559-11D3-8E3A-00C04F6837D5")]
+		public static partial Guid* BHID_SFUIObject { get; }
+
 		[GuidRVAGen.Guid("94F60519-2850-4924-AA5A-D15E84868039")]
 		public static partial Guid* BHID_EnumItems { get; }
 

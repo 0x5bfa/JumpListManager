@@ -240,7 +240,7 @@ namespace JumpListManager
 				finally
 				{
 					if (pszCategoryName is not null) NativeMemory.Free(pszCategoryName);
-					if (category.Anonymous.Name.Value is not null) PInvoke.CoTaskMemFree(category.Anonymous.Name);
+					if (category.Anonymous.Name.Value is not null && category.Type is APPDESTCATEGORYTYPE.CUSTOM) PInvoke.CoTaskMemFree(category.Anonymous.Name);
 					if (FAILED(hr)) foreach (var item in groupedCollection) item.Dispose();
 				}
 			}

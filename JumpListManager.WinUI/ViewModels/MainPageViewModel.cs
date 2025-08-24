@@ -7,12 +7,14 @@ using JumpListManager.Data;
 using Microsoft.UI.Xaml.Data;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Input;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.Com;
 using Windows.Win32.System.Com.StructuredStorage;
 using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.Shell.Common;
 using Windows.Win32.UI.Shell.PropertiesSystem;
 using Windows.Win32.UI.WindowsAndMessaging;
 
@@ -177,12 +179,73 @@ namespace JumpListManager.ViewModels
 			}
 		}
 
-		private void ExecuteOpenCommand()
+		private unsafe void ExecuteOpenCommand()
 		{
+			if (SelectedJumpListItem is null)
+				return;
+
+			HRESULT hr = default;
+
+			if (SelectedJumpListItem.DataType is JumpListDataType.IShellItem)
+			{
+				SHELLEXECUTEINFOW info = default;
+				info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
+				info.fMask = PInvoke.SEE_MASK_INVOKEIDLIST | PInvoke.SEE_MASK_FLAG_NO_UI | PInvoke.SEE_MASK_FLAG_DDEWAIT;
+				info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
+
+				using ComHeapPtr<ITEMIDLIST> thisPidl = default;
+				hr = PInvoke.SHGetIDListFromObject((IUnknown*)SelectedJumpListItem.NativeObjectPtr, thisPidl.GetAddressOf());
+
+				fixed (char* pwszVerb = "open")
+				{
+					info.lpVerb = pwszVerb;
+					info.lpIDList = thisPidl.Get();
+
+					PInvoke.ShellExecuteEx(&info);
+				}
+			}
+			else if (SelectedJumpListItem.DataType is JumpListDataType.IShellLink)
+			{
+				PWSTR pwszPath = (PWSTR)NativeMemory.AllocZeroed(PInvoke.MAX_PATH);
+				PWSTR pwszArgs = (PWSTR)NativeMemory.AllocZeroed(PInvoke.MAX_PATH);
+
+				hr = ((IShellLinkW*)SelectedJumpListItem.NativeObjectPtr)->GetPath(pwszPath, (int)PInvoke.MAX_PATH, null, 4U);
+				hr = ((IShellLinkW*)SelectedJumpListItem.NativeObjectPtr)->GetArguments(pwszArgs, (int)PInvoke.MAX_PATH);
+
+				SHELLEXECUTEINFOW info = default;
+				info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
+				info.fMask = PInvoke.SEE_MASK_INVOKEIDLIST | PInvoke.SEE_MASK_FLAG_NO_UI | PInvoke.SEE_MASK_FLAG_DDEWAIT;
+				info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
+
+				using ComHeapPtr<ITEMIDLIST> thisPidl = default;
+				hr = PInvoke.SHGetIDListFromObject((IUnknown*)SelectedJumpListItem.NativeObjectPtr, thisPidl.GetAddressOf());
+
+				info.lpFile = pwszPath;
+				info.lpParameters = pwszArgs;
+
+				PInvoke.ShellExecuteEx(&info);
+			}
 		}
 
-		private void ExecuteOpenFileLocationCommand()
+		private unsafe void ExecuteOpenFileLocationCommand()
 		{
+			if (SelectedJumpListItem is null ||
+				SelectedJumpListItem.Type is not JumpListItemType.Automatic ||
+				SelectedJumpListItem.DataType is not JumpListDataType.IShellItem ||
+				SelectedJumpListItem.NativeObjectPtr is null)
+				return;
+
+			HRESULT hr = default;
+
+			using ComPtr<IShellItem> parentsi = default;
+			using ComHeapPtr<ITEMIDLIST> thisPidl = default;
+			using ComHeapPtr<ITEMIDLIST> parentPidl = default;
+			hr = ((IShellItem*)SelectedJumpListItem.NativeObjectPtr)->GetParent(parentsi.GetAddressOf());
+			hr = PInvoke.SHGetIDListFromObject((IUnknown*)SelectedJumpListItem.NativeObjectPtr, thisPidl.GetAddressOf());
+			hr = PInvoke.SHGetIDListFromObject((IUnknown*)parentsi.Get(), parentPidl.GetAddressOf());
+			ITEMIDLIST* childPidl = PInvoke.ILFindLastID(thisPidl.Get());
+
+			hr = PInvoke.SHOpenFolderAndSelectItems(parentPidl.Get(), 1, &childPidl, 0U);
 		}
 
 		private void ExecutePinItemCommand()
@@ -225,17 +288,29 @@ namespace JumpListManager.ViewModels
 
 		private unsafe void ExecuteOpenPropertiesCommand()
 		{
-			//SHELLEXECUTEINFOW info = default;
-			//info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
-			//info.lpVerb = "properties";
-			//info.lpFile = Filename;
-			//info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOW;
-			//info.fMask = PInvoke.SEE_MASK_INVOKEIDLIST;
+			if (SelectedJumpListItem is null ||
+				SelectedJumpListItem.Type is not JumpListItemType.Automatic ||
+				SelectedJumpListItem.DataType is not JumpListDataType.IShellItem ||
+				SelectedJumpListItem.NativeObjectPtr is null)
+				return;
 
-			//fixed (char* pwszVerb = "properties", pwszFilePath = "")
-			//{
-			//	PInvoke.ShellExecuteEx(&info);
-			//}
+			HRESULT hr = default;
+
+			SHELLEXECUTEINFOW info = default;
+			info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
+			info.fMask = PInvoke.SEE_MASK_INVOKEIDLIST | PInvoke.SEE_MASK_FLAG_NO_UI | PInvoke.SEE_MASK_FLAG_DDEWAIT;
+			info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
+
+			using ComHeapPtr<ITEMIDLIST> thisPidl = default;
+			hr = PInvoke.SHGetIDListFromObject((IUnknown*)SelectedJumpListItem.NativeObjectPtr, thisPidl.GetAddressOf());
+
+			fixed (char* pwszVerb = "properties")
+			{
+				info.lpVerb = pwszVerb;
+				info.lpIDList = thisPidl.Get();
+
+				PInvoke.ShellExecuteEx(&info);
+			}
 		}
 
 		private async Task ExecuteOpenAboutDialogCommand()
