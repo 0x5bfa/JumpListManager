@@ -21,7 +21,7 @@ namespace JumpListManager
 		public void* NativeObjectPtr
 		{
 			get => field;
-			set { field = value; ((IUnknown*)field)->AddRef(); }
+			set { field = value; }
 		} = nativeObjectPtr;
 
 		public IContextMenu* ContextMenuPtr
