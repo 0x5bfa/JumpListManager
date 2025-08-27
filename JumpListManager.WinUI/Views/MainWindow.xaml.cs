@@ -12,7 +12,7 @@ namespace JumpListManager.Views
 		{
 			InitializeComponent();
 
-			AppWindow.SetIcon("Assets/AppLogo.ico");
+			AppWindow.SetIcon("Assets/AppIcon.ico");
 			ExtendsContentIntoTitleBar = true;
 
 			var frame = new Frame();
