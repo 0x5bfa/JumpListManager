@@ -1,0 +1,40 @@
+# Copyright (c) 0x5BFA
+# Licensed under the MIT License. See the LICENSE.
+
+name: JumpListManager CD
+
+on:
+  workflow_dispatch:
+
+env:
+  WORKING_DIR:         '${{ github.workspace }}' # 'D:\a\JumpListManager\JumpListManager'
+  SOLUTION_PATH:       '${{ github.workspace }}\JumpListManager.slnx'
+  WAPPROJ_PATH:        '${{ github.workspace }}\JumpListManager.WinUI.Packaging\JumpListManager.WinUI.Packaging.wapproj'
+  MSIXUPLOAD_PATH:     '${{ github.workspace }}\JumpListManager.WinUI.Packaging\AppPackages\**\*.msixupload'
+
+jobs:
+
+  build:
+    runs-on: windows-latest
+    env:
+      CONFIGURATION: 'Release'
+      PLATFORM: 'x64'
+
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+
+    - name: Build and package the solution
+      run: msbuild /restore $env:WAPPROJ_PATH /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /p:UapAppxPackageBuildMode=CI
+
+    - name: Upload the msixupload to GitHub Actions
+      uses: actions/upload-artifact@v4
+      with:
+        name: 'Packaged msixupload'
+        path: ${{ env.MSIXUPLOAD_PATH }}

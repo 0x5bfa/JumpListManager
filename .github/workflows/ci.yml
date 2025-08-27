@@ -1,4 +1,4 @@
-# Copyright (c) 2024 0x5BFA
+# Copyright (c) 0x5BFA
 # Licensed under the MIT License. See the LICENSE.
 
 name: JumpListManager CI
@@ -20,17 +20,12 @@ on:
 run-name: ${{ github.event_name == 'pull_request' && 'JumpListManager PR Validation' || 'JumpListManager CI Validation' }}
 
 env:
-    WORKING_DIR:         '${{ github.workspace }}' # 'D:\a\JumpListManager\JumpListManager'
-    SOLUTION_PATH:       '${{ github.workspace }}\JumpListManager.slnx'
-    WAPPROJ_PATH:        '${{ github.workspace }}\JumpListManager.WinUI.Packaging\JumpListManager.WinUI.Packaging.wapproj'
-    APPX_PACKAGE_DIR:    '${{ github.workspace }}\JumpListManager.WinUI.Packaging\AppPackages'
+  WORKING_DIR:         '${{ github.workspace }}' # 'D:\a\JumpListManager\JumpListManager'
+  SOLUTION_PATH:       '${{ github.workspace }}\JumpListManager.slnx'
+  WAPPROJ_PATH:        '${{ github.workspace }}\JumpListManager.WinUI.Packaging\JumpListManager.WinUI.Packaging.wapproj'
 
 jobs:
-
   build:
-
-    if: github.repository_owner == '0x5bfa'
-
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -42,7 +37,6 @@ jobs:
       PLATFORM: ${{ matrix.platform }}
 
     steps:
-
     - name: Checkout the repository
       uses: actions/checkout@v4
     - name: Setup MSBuild
@@ -52,18 +46,5 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
 
-    - name: Restore the solution
-      run: msbuild /restore $env:SOLUTION_PATH
-
     - name: Build the solution
-      run: msbuild $env:WAPPROJ_PATH `
-        /p:Configuration=$env:CONFIGURATION `
-        /p:Platform=$env:PLATFORM `
-        /p:UapAppxPackageBuildMode=StoreUpload
-
-    - if: env.CONFIGURATION == 'Release' && env.PLATFORM == 'x64'
-      name: Upload the packages to the Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: 'Appx Packages (${{ env.CONFIGURATION }},${{ env.PLATFORM }})'
-        path: ${{ env.APPX_PACKAGE_DIR }}
+      run: msbuild /restore $env:WAPPROJ_PATH /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /p:AppxBundle=Never
