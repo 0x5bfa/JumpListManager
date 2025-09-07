@@ -18,25 +18,24 @@ namespace JumpListManager
 
 		public static byte[]? GetThumbnail(IShellItem* pShellItem, int size = 32)
 		{
+			HRESULT hr = default;
 			HBITMAP hBitmap = default;
 			byte* flippedBits = null;
 
 			try
 			{
 				using ComPtr<IShellItemImageFactory> pShellItemImageFactory = default;
-				pShellItem->QueryInterface(IID.IID_IShellItemImageFactory, (void**)pShellItemImageFactory.GetAddressOf());
-				if (pShellItemImageFactory.IsNull)
-					return [];
+				hr = pShellItem->QueryInterface(IID.IID_IShellItemImageFactory, (void**)pShellItemImageFactory.GetAddressOf());
+				if (FAILED(hr) || pShellItemImageFactory.IsNull) return null;
 
 				// Get HBITMAP
-				HRESULT hr = pShellItemImageFactory.Get()->GetImage(new(size, size), SIIGBF.SIIGBF_ICONONLY, &hBitmap);
-				if (hr.ThrowOnFailure().Failed)
-					return [];
+				hr = pShellItemImageFactory.Get()->GetImage(new(size, size), SIIGBF.SIIGBF_ICONONLY, &hBitmap);
+				if (FAILED(hr) || hBitmap.IsNull) return null;
 
 				// Retrieve BITMAP data
 				BITMAP bmp = default;
 				if (PInvoke.GetObject(hBitmap, sizeof(BITMAP), &bmp) is 0)
-					return [];
+					return null;
 
 				// Allocate buffer for flipped pixel data
 				flippedBits = (byte*)NativeMemory.AllocZeroed((nuint)(bmp.bmWidthBytes * bmp.bmHeight));
@@ -48,18 +47,15 @@ namespace JumpListManager
 						(byte*)bmp.bmBits + y * bmp.bmWidthBytes,
 						flippedBits + (bmp.bmHeight - y - 1) * bmp.bmWidthBytes,
 						bmp.bmWidthBytes,
-						bmp.bmWidthBytes
-					);
+						bmp.bmWidthBytes);
 				}
 
 				// Create GpBitmap from the flipped pixel data
 				GpBitmap* gpBitmap = default;
 				var status = PInvoke.GdipCreateBitmapFromScan0(bmp.bmWidth, bmp.bmHeight, bmp.bmWidthBytes, 2498570, flippedBits, &gpBitmap);
-				if (status is not Status.Ok)
-					return [];
+				if (status is not Status.Ok) return null;
 
-				if (!ConvertGpBitmapToByteArray(gpBitmap, out var thumbnailData))
-					return [];
+				if (!ConvertGpBitmapToByteArray(gpBitmap, out var thumbnailData)) return null;
 
 				return thumbnailData;
 			}
@@ -70,7 +66,7 @@ namespace JumpListManager
 			}
 		}
 
-		public static byte[] GetThumbnail(IShellLinkW* pShellLink, int size = 32)
+		public static byte[]? GetThumbnail(IShellLinkW* pShellLink, int size = 32)
 		{
 			HRESULT hr = default;
 			int nIconIndex = 0;
@@ -84,12 +80,14 @@ namespace JumpListManager
 				pwszIconLocation = (char*)NativeMemory.Alloc(256);
 
 				hr = pShellLink->GetIconLocation(pwszIconLocation, 256, &nIconIndex);
-
-				string path = new(pwszIconLocation);
+				if (FAILED(hr)) return null;
 
 				using ComPtr<IExtractIconW> pExtractIcon = default;
-				pShellLink->QueryInterface(IID.IID_IExtractIconW, (void**)pExtractIcon.GetAddressOf());
+				hr = pShellLink->QueryInterface(IID.IID_IExtractIconW, (void**)pExtractIcon.GetAddressOf());
+				if (FAILED(hr)) return null;
+
 				hr = pExtractIcon.Get()->Extract(pwszIconLocation, (uint)nIconIndex, &hIconLarge, &hIconSmall, (uint)size);
+				if (FAILED(hr) || hIconLarge.IsNull || hIconSmall.IsNull) return null;
 
 				// Use GDI+ to convert the icon to a bitmap with alpha mask
 				using var icon = System.Drawing.Icon.FromHandle(hIconLarge);

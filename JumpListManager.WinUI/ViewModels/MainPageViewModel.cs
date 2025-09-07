@@ -125,6 +125,10 @@ namespace JumpListManager.ViewModels
 			if (manager.EnumerateRecentItems() is { Count: not 0 } recentItems)
 				GroupedJumpListItems.Add(recentItems);
 
+			// Insert the frequent items
+			if (manager.EnumerateFrequentItems() is { Count: not 0 } frequentItems)
+				GroupedJumpListItems.Add(frequentItems);
+
 			// Insert the custom destination items
 			int count = manager.GetCustomDestinationsCount();
 			for (uint index = 0U; index < (uint)count; index++)
@@ -147,6 +151,12 @@ namespace JumpListManager.ViewModels
 
 			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
 			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
+
+			CommandItems.Add(new CommandButtonItem("\uE894", "Delete the all MRU", new RelayCommand(ExecuteClearAutomaticDestinationsCommand)));
+
+			//CommandItems.Add(new CommandButtonItem("\uE894", "Delete this category", new RelayCommand(ExecuteClearAutomaticDestinationsCommand)));
+
+			CommandItems.Add(new CommandSeparatorItem());
 
 			CommandItems.Add(new CommandButtonItem("\uE737", "Open", new RelayCommand(ExecuteOpenCommand)));
 
@@ -177,6 +187,18 @@ namespace JumpListManager.ViewModels
 					CommandItems.Add(new CommandButtonItem("\uE90F", "Properties", new RelayCommand(ExecuteOpenPropertiesCommand)));
 				}
 			}
+		}
+
+		public unsafe void ExecuteClearAutomaticDestinationsCommand()
+		{
+			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+
+			using JumpList manager = JumpList.Create(amuid)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			manager.ClearAutomaticDestinations();
+
+			EnumerateJumpListItems();
 		}
 
 		private unsafe void ExecuteOpenCommand()

@@ -53,9 +53,9 @@ namespace Windows.Win32.System.Com
 				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), type, maxCount, flags, riid, ppvObject);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT AddUsagePoint(IUnknown* pObject)
+		public HRESULT AddUsagePoint(IUnknown* punk)
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*, int>)lpVtbl[6])
-				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), pObject);
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), punk);
 
 		/// <summary>
 		/// Pins an item to the list.
@@ -94,21 +94,21 @@ namespace Windows.Win32.System.Com
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*, int>)lpVtbl[9])
 				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), psi);
 
-		public HRESULT SetUsageData(IUnknown* pItem, float* a2, long* pFileTime)
+		public HRESULT SetUsageData(IUnknown* punk, float* a2, long* pFileTime)
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*,float*, long*, int>)lpVtbl[10])
-				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), pItem, a2, pFileTime);
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), punk, a2, pFileTime);
 
-		public HRESULT GetUsageData(IUnknown* pItem, float* a2, long* pFileTime)
+		public HRESULT GetUsageData(IUnknown* punk, float* a2, long* pFileTime)
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, IUnknown*, float*, long*, int>)lpVtbl[11])
-				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), pItem, a2, pFileTime);
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), punk, a2, pFileTime);
 
-		public HRESULT ResolveDestination(HWND hWnd, int a2, IShellItem* pShellItem, Guid* riid, void** ppvObject)
+		public HRESULT ResolveDestination(HWND hWnd, int a2, IShellItem* psi, Guid* riid, void** ppv)
 			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, HWND, int, IShellItem*, Guid*, void**, int>)lpVtbl[12])
-				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), hWnd, a2, pShellItem, riid, ppvObject);
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), hWnd, a2, psi, riid, ppv);
 
-		public HRESULT ClearList(int iListType)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, int, int>)lpVtbl[13])
-				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), iListType);
+		public HRESULT ClearList(BOOL removePinsToo)
+			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IAutomaticDestinationList*, BOOL, int>)lpVtbl[13])
+				((IAutomaticDestinationList*)Unsafe.AsPointer(ref this), removePinsToo);
 
 		[GuidRVAGen.Guid("E9C5EF8D-FD41-4F72-BA87-EB03BAD5817C")]
 		public static partial ref readonly Guid Guid { get; }

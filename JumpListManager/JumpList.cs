@@ -248,6 +248,26 @@ namespace JumpListManager
 			return null;
 		}
 
+		public bool ClearAutomaticDestinations()
+		{
+			HRESULT hr = default;
+
+			BOOL fHasList = default;
+			hr = _autoDestListPtr->HasList(&fHasList);
+			if (FAILED(hr) || fHasList == BOOL.FALSE) return false;
+
+			hr = _autoDestListPtr->ClearList(BOOL.TRUE);
+			if (FAILED(hr)) return false;
+
+			if (pPinnedItemsObjectCollection is not null)
+			{
+				pPinnedItemsObjectCollection->Release();
+				pPinnedItemsObjectCollection = null;
+			}
+
+			return true;
+		}
+
 		public bool PinItem(JumpListItem item)
 		{
 			if (item is null || item.IsPinned || item.Type is JumpListItemType.Task)
