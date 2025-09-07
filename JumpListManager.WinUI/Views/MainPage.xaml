@@ -82,6 +82,8 @@
 					<RowDefinition Height="*" />
 					<RowDefinition Height="Auto" />
 					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
+					<RowDefinition Height="Auto" />
 				</Grid.RowDefinitions>
 
 				<ListView
@@ -139,6 +141,26 @@
 
 				<Button
 					Grid.Row="2"
+					Margin="12,8,12,8"
+					HorizontalAlignment="Stretch"
+					HorizontalContentAlignment="Left"
+					Background="Transparent"
+					BorderThickness="0"
+					Command="{x:Bind ViewModel.OpenCrcHashCalculatorCommand}">
+					<StackPanel Orientation="Horizontal" Spacing="8">
+						<FontIcon FontSize="16" Glyph="&#xE8EF;" />
+						<TextBlock Text="Calculate CRC hash" />
+					</StackPanel>
+				</Button>
+
+				<Rectangle
+					Grid.Row="3"
+					Height="1"
+					Margin="12,0"
+					Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+				<Button
+					Grid.Row="4"
 					Margin="12,8,12,8"
 					HorizontalAlignment="Stretch"
 					HorizontalContentAlignment="Left"

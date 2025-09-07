@@ -5,9 +5,9 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace JumpListManager.Views
 {
-	public sealed partial class SettingsDialog : ContentDialog
+	public sealed partial class AboutDialog : ContentDialog
 	{
-		public SettingsDialog()
+		public AboutDialog()
 		{
 			InitializeComponent();
 		}

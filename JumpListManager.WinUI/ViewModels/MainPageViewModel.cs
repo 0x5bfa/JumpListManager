@@ -54,12 +54,15 @@ namespace JumpListManager.ViewModels
 			}
 		}
 
+		public ICommand OpenCrcHashCalculatorCommand { get; }
+
 		public ICommand OpenAboutDialogCommand { get; }
 
 		public MainPageViewModel()
 		{
 			EnumerateApplicationItems();
 
+			OpenCrcHashCalculatorCommand = new AsyncRelayCommand(ExecuteOpenCrcHashCalculatorCommand);
 			OpenAboutDialogCommand = new AsyncRelayCommand(ExecuteOpenAboutDialogCommand);
 		}
 
@@ -335,9 +338,19 @@ namespace JumpListManager.ViewModels
 			}
 		}
 
+		private async Task ExecuteOpenCrcHashCalculatorCommand()
+		{
+			var dialog = new Views.CrcCalculatorDialog
+			{
+				XamlRoot = App.MainWindow!.Content.XamlRoot
+			};
+
+			await dialog.ShowAsync();
+		}
+
 		private async Task ExecuteOpenAboutDialogCommand()
 		{
-			var dialog = new Views.SettingsDialog
+			var dialog = new Views.AboutDialog
 			{
 				XamlRoot = App.MainWindow!.Content.XamlRoot
 			};
