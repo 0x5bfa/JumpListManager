@@ -21,7 +21,7 @@ namespace Windows.Win32.System.Com
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT GetList(DESTLISTTYPE type, int maxCount, GETDESTLISTFLAGS flags, Guid* riid, [MarshalAs(UnmanagedType.Interface)] out object ppvObject);
+		HRESULT GetList(DESTLISTTYPE type, int maxCount, GETDESTLISTFLAGS flags, Guid* riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
@@ -41,19 +41,19 @@ namespace Windows.Win32.System.Com
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT SetUsageData([MarshalAs(UnmanagedType.Interface)] object punk, out float a2, out long pFileTime);
+		HRESULT SetUsageData([MarshalAs(UnmanagedType.Interface)] object punk, in float pAccessCount, in long aLastAccessedUtc);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT GetUsageData([MarshalAs(UnmanagedType.Interface)] object punk, out float a2, out long pFileTime);
+		HRESULT GetUsageData([MarshalAs(UnmanagedType.Interface)] object punk, out float pAccessCount, out long aLastAccessedUtc);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT ResolveDestination(HWND hWnd, int a2, [MarshalAs(UnmanagedType.Interface)] IShellItem psi, Guid* riid, [MarshalAs(UnmanagedType.Interface)] out object ppvObject);
+		HRESULT ResolveDestination(HWND hWnd, int a2, [MarshalAs(UnmanagedType.Interface)] IShellItem psi, Guid* riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT ClearList([MarshalAs(UnmanagedType.Bool)] bool removePinsToo);
+		HRESULT ClearList([MarshalAs(UnmanagedType.Bool)] bool removePinsAsWell);
 	}
 
 	public enum DESTLISTTYPE : uint
