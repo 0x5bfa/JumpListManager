@@ -6,7 +6,6 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Globalization;
 using Windows.Win32.System.Com;
-using Windows.Win32.System.Com.StructuredStorage;
 using Windows.Win32.UI.Shell;
 using Windows.Win32.UI.Shell.Common;
 using Windows.Win32.UI.Shell.PropertiesSystem;
@@ -16,13 +15,13 @@ namespace JumpListManager
 	/// <summary>
 	/// Represents a native wrapper for accessing and managing Windows Jump Lists using unmanaged COM interfaces.
 	/// </summary>
-	public unsafe partial class JumpList : IDisposable
+	public unsafe partial class JumpList
 	{
-		private IAutomaticDestinationList* _autoDestListPtr = null;
-		private ICustomDestinationList* _customDestListPtr = null;
-		private IInternalCustomDestinationList* _customDestList2Ptr = null;
+		private IAutomaticDestinationList _autoDestListPtr = null!;
+		private ICustomDestinationList _customDestListPtr = null!;
+		private IInternalCustomDestinationList _customDestList2Ptr = null!;
 
-		private IObjectCollection* pPinnedItemsObjectCollection = null;
+		private IObjectCollection pinnedItemsObjectCollection = null!;
 
 		/// <summary>
 		/// Creates an instance of <see cref="JumpList"/> for the specified Application User Model ID (AppUserModelID).
@@ -31,41 +30,30 @@ namespace JumpListManager
 		/// <returns>If succeeded, returns a valid instance of <see cref="JumpList"/>; otherwise, returns null.</returns>
 		public static JumpList? Create(string? szAppId)
 		{
-			if (string.IsNullOrEmpty(szAppId))
-				return null;
+			if (string.IsNullOrEmpty(szAppId)) return null;
 
 			HRESULT hr = default;
 
-			IAutomaticDestinationList* autoDestListPtr = default;
-			ICustomDestinationList* customDestListPtr = default;
-			IInternalCustomDestinationList* customDestList2Ptr = default;
+			hr = PInvoke.CoCreateInstance(*CLSID.CLSID_AutomaticDestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out IAutomaticDestinationList autoDestListPtr).ThrowOnFailure();
+			if (FAILED(hr)) return null;
 
-			hr = PInvoke.CoCreateInstance(CLSID.CLSID_AutomaticDestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, IID.IID_IAutomaticDestinationList, (void**)&autoDestListPtr).ThrowOnFailure();
-			if (FAILED(hr))
-				return null;
+			hr = PInvoke.CoCreateInstance(*CLSID.CLSID_DestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out ICustomDestinationList customDestListPtr).ThrowOnFailure();
+			if (FAILED(hr)) return null;
 
-			hr = PInvoke.CoCreateInstance(CLSID.CLSID_DestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, IID.IID_ICustomDestinationList, (void**)&customDestListPtr).ThrowOnFailure();
-			if (FAILED(hr))
-				return null;
+			hr = PInvoke.CoCreateInstance(*CLSID.CLSID_DestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out IInternalCustomDestinationList customDestList2Ptr).ThrowOnFailure();
+			if (FAILED(hr)) return null;
 
-			hr = PInvoke.CoCreateInstance(CLSID.CLSID_DestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, IID.IID_ICustomDestinationList2, (void**)&customDestList2Ptr).ThrowOnFailure();
-			if (FAILED(hr))
-				return null;
+			hr = customDestListPtr.SetAppID(szAppId).ThrowOnFailure();
+			if (FAILED(hr)) return null;
 
 			// These internally convert the passed AMUID string to the corresponding CRC hash and initialize the path to the destination lists with FOLDERID_Recent.
 			fixed (char* pwszAppId = szAppId)
 			{
-				hr = autoDestListPtr->Initialize(pwszAppId, default, default).ThrowOnFailure();
-				if (FAILED(hr))
-					return null;
+				hr = autoDestListPtr.Initialize(pwszAppId, default, default).ThrowOnFailure();
+				if (FAILED(hr)) return null;
 
-				hr = customDestListPtr->SetAppID(pwszAppId).ThrowOnFailure();
-				if (FAILED(hr))
-					return null;
-
-				hr = customDestList2Ptr->SetApplicationID(pwszAppId).ThrowOnFailure();
-				if (FAILED(hr))
-					return null;
+				hr = customDestList2Ptr.SetApplicationID(pwszAppId).ThrowOnFailure();
+				if (FAILED(hr)) return null;
 			}
 
 			return new() { _autoDestListPtr = autoDestListPtr, _customDestListPtr = customDestListPtr, _customDestList2Ptr = customDestList2Ptr };
@@ -73,40 +61,33 @@ namespace JumpListManager
 
 		public bool HasAutomaticDestinationsOf(DESTLISTTYPE type)
 		{
-			HRESULT hr = default;
+			HRESULT hr = _autoDestListPtr.HasList(out var hasList);
+			if (FAILED(hr) || !hasList) return false;
 
-			using ComPtr<IObjectCollection> pObjectCollection = default;
+			hr = _autoDestListPtr.GetList(type, 1, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+			if (FAILED(hr)) return false;
 
-			BOOL fHasList = default;
-			hr = _autoDestListPtr->HasList(&fHasList);
-			if (FAILED(hr) || !(bool)fHasList) return false;
+			var objectCollection = (IObjectCollection)objectCollectionObj;
 
-			hr = _autoDestListPtr->GetList(type, 1, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, (void**)pObjectCollection.GetAddressOf());
-			if (FAILED(hr))
-				return false;
-
-			hr = pObjectCollection.Get()->GetCount(out uint pcObjects);
-			if (FAILED(hr))
-				return false;
+			hr = objectCollection.GetCount(out uint pcObjects);
+			if (FAILED(hr)) return false;
 
 			return pcObjects is not 0U;
 		}
 
 		public JumpListGroupItem? EnumeratePinnedItems(int count = 20)
 		{
-			HRESULT hr = default;
-
-			IObjectCollection* pObjectCollection = default;
 			JumpListGroupItem items = new() { Key = "Pinned" };
 
-			hr = _autoDestListPtr->GetList(DESTLISTTYPE.PINNED, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, (void**)&pObjectCollection);
+			HRESULT hr = _autoDestListPtr.GetList(DESTLISTTYPE.PINNED, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
 			if (FAILED(hr)) return null;
 
-			// Cache the pinned items collection for later use
-			if (pPinnedItemsObjectCollection is not null) pPinnedItemsObjectCollection->Release();
-			pPinnedItemsObjectCollection = pObjectCollection;
+			var objectCollection = (IObjectCollection)objectCollectionObj;
 
-			items.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Automatic, pObjectCollection));
+			// Cache the pinned items collection for later use
+			pinnedItemsObjectCollection = objectCollection;
+
+			items.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Automatic, objectCollection));
 
 			return items;
 		}
@@ -115,54 +96,36 @@ namespace JumpListManager
 		{
 			HRESULT hr = default;
 
-			IObjectCollection* pObjectCollection = default;
 			JumpListGroupItem items = new() { Key = "Recent" };
 
-			try
-			{
-				hr = _autoDestListPtr->GetList(DESTLISTTYPE.RECENT, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, (void**)&pObjectCollection);
-				if (FAILED(hr)) return null;
+			hr = _autoDestListPtr.GetList(DESTLISTTYPE.RECENT, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+			if (FAILED(hr)) return null;
 
-				items.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Automatic, pObjectCollection));
-				return items;
-			}
-			finally
-			{
-				pObjectCollection->Release();
-			}
+			var objectCollection = (IObjectCollection)objectCollectionObj;
+
+			items.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Automatic, objectCollection));
+			return items;
 		}
 
 		public JumpListGroupItem? EnumerateFrequentItems(int count = 20)
 		{
-			HRESULT hr = default;
-
-			IObjectCollection* pObjectCollection = default;
 			JumpListGroupItem items = new() { Key = "Frequent" };
 
-			try
-			{
-				hr = _autoDestListPtr->GetList(DESTLISTTYPE.FREQUENT, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, (void**)&pObjectCollection);
-				if (FAILED(hr)) return null;
+			HRESULT hr = _autoDestListPtr.GetList(DESTLISTTYPE.FREQUENT, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+			if (FAILED(hr)) return null;
 
-				items.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Automatic, pObjectCollection));
-				return items;
-			}
-			finally
-			{
-				pObjectCollection->Release();
-			}
+			var objectCollection = (IObjectCollection)objectCollectionObj;
+
+			items.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Automatic, objectCollection));
+			return items;
 		}
 
 		public int GetCustomDestinationsCount()
 		{
-			HRESULT hr = default;
+			HRESULT hr = _customDestList2Ptr.GetCategoryCount(out var count);
+			if (FAILED(hr)) return -1;
 
-			uint dwCategoryCount = 0U;
-			hr = _customDestList2Ptr->GetCategoryCount(&dwCategoryCount);
-			if (FAILED(hr))
-				return -1;
-
-			return (int)dwCategoryCount;
+			return (int)count;
 		}
 
 		public JumpListGroupItem? EnumerateCustomDestinationsAt(uint dwIndex, int count = 20)
@@ -176,7 +139,7 @@ namespace JumpListManager
 			try
 			{
 				// Get the category data (e.g., the type, the name, and the count of the destinations)
-				hr = _customDestList2Ptr->GetCategory(dwIndex, GETCATFLAG.DEFAULT, &category);
+				hr = _customDestList2Ptr.GetCategory(dwIndex, GETCATFLAG.DEFAULT, out category);
 				if (FAILED(hr) || category.Type is not APPDESTCATEGORYTYPE.CUSTOM)
 					return null;
 
@@ -188,14 +151,14 @@ namespace JumpListManager
 
 				groupedCollection.Key = new string(pszCategoryName);
 
-				using ComPtr<IObjectCollection> pObjectCollection = default;
-
 				// Enumerate the destinations in the category
-				hr = _customDestList2Ptr->EnumerateCategoryDestinations(dwIndex, IID.IID_IObjectCollection, (void**)pObjectCollection.GetAddressOf());
+				hr = _customDestList2Ptr.EnumerateCategoryDestinations(dwIndex, IID.IID_IObjectCollection, out var objectCollectionObj);
 				if (FAILED(hr))
 					return null;
 
-				groupedCollection.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Custom, pObjectCollection.Get()));
+				var objectCollection = (IObjectCollection)objectCollectionObj;
+
+				groupedCollection.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Custom, objectCollection));
 
 				return groupedCollection;
 			}
@@ -203,7 +166,6 @@ namespace JumpListManager
 			{
 				if (pszCategoryName is not null) NativeMemory.Free(pszCategoryName);
 				if (category.Anonymous.Name.Value is not null && category.Type is APPDESTCATEGORYTYPE.CUSTOM) PInvoke.CoTaskMemFree(category.Anonymous.Name);
-				if (FAILED(hr)) foreach (var item in groupedCollection) item.Dispose();
 			}
 		}
 
@@ -224,24 +186,23 @@ namespace JumpListManager
 				try
 				{
 					// Get the category data (e.g., the type, the name, and the count of the destinations)
-					hr = _customDestList2Ptr->GetCategory(dwCategoryIndex, GETCATFLAG.DEFAULT, &category);
+					hr = _customDestList2Ptr.GetCategory(dwCategoryIndex, GETCATFLAG.DEFAULT, out category);
 					if (FAILED(hr) || category.Type is not APPDESTCATEGORYTYPE.TASKS)
 						continue;
 
 					// Enumerate and add the destinations in the category to the list
-					using ComPtr<IObjectCollection> pObjectCollection = default;
-					hr = _customDestList2Ptr->EnumerateCategoryDestinations(dwCategoryIndex, IID.IID_IObjectCollection, (void**)pObjectCollection.GetAddressOf());
-					if (FAILED(hr))
-						return null;
+					hr = _customDestList2Ptr.EnumerateCategoryDestinations(dwCategoryIndex, IID.IID_IObjectCollection, out var objectCollectionObj);
+					if (FAILED(hr)) return null;
 
-					groupedCollection.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Task, pObjectCollection.Get()));
+					var objectCollection = (IObjectCollection)objectCollectionObj;
+
+					groupedCollection.AddRange(CreateCollectionFromIObjectCollection(JumpListItemType.Task, objectCollection));
 					return groupedCollection;
 				}
 				finally
 				{
 					if (pszCategoryName is not null) NativeMemory.Free(pszCategoryName);
 					if (category.Anonymous.Name.Value is not null && category.Type is APPDESTCATEGORYTYPE.CUSTOM) PInvoke.CoTaskMemFree(category.Anonymous.Name);
-					if (FAILED(hr)) foreach (var item in groupedCollection) item.Dispose();
 				}
 			}
 
@@ -252,18 +213,11 @@ namespace JumpListManager
 		{
 			HRESULT hr = default;
 
-			BOOL fHasList = default;
-			hr = _autoDestListPtr->HasList(&fHasList);
-			if (FAILED(hr) || fHasList == BOOL.FALSE) return false;
+			hr = _autoDestListPtr.HasList(out var hasList);
+			if (FAILED(hr) || !hasList) return false;
 
-			hr = _autoDestListPtr->ClearList(BOOL.TRUE);
+			hr = _autoDestListPtr.ClearList(BOOL.TRUE);
 			if (FAILED(hr)) return false;
-
-			if (pPinnedItemsObjectCollection is not null)
-			{
-				pPinnedItemsObjectCollection->Release();
-				pPinnedItemsObjectCollection = null;
-			}
 
 			return true;
 		}
@@ -275,7 +229,7 @@ namespace JumpListManager
 
 			HRESULT hr = default;
 
-			hr = _autoDestListPtr->PinItem((IUnknown*)item.NativeObjectPtr, -1 /*Pin at the last*/);
+			hr = _autoDestListPtr.PinItem(item.ComObject, -1 /*Pin at the last*/);
 			if (FAILED(hr)) return false;
 
 			item.IsPinned = true;
@@ -289,7 +243,7 @@ namespace JumpListManager
 
 			HRESULT hr = default;
 
-			hr = _autoDestListPtr->PinItem((IUnknown*)item.NativeObjectPtr, -2 /*Unpin*/);
+			hr = _autoDestListPtr.PinItem(item.ComObject, -2 /*Unpin*/);
 			if (FAILED(hr)) return false;
 
 			item.IsPinned = false;
@@ -305,82 +259,65 @@ namespace JumpListManager
 
 			if (item.Type is JumpListItemType.Automatic)
 			{
-				hr = _autoDestListPtr->RemoveDestination((IUnknown*)item.NativeObjectPtr);
+				hr = _autoDestListPtr.RemoveDestination(item.ComObject);
 				if (FAILED(hr)) return false;
 			}
 			else if (item.Type is JumpListItemType.Custom)
 			{
-				hr = _customDestList2Ptr->RemoveDestination((IUnknown*)item.NativeObjectPtr);
+				hr = _customDestList2Ptr.RemoveDestination(item.ComObject);
 				if (FAILED(hr)) return false;
 			}
 
 			return true;
 		}
 
-		private IEnumerable<JumpListItem> CreateCollectionFromIObjectCollection(JumpListItemType type, IObjectCollection* pObjectCollection)
+		private IEnumerable<JumpListItem> CreateCollectionFromIObjectCollection(JumpListItemType type, IObjectCollection objectCollection)
 		{
-			HRESULT hr = default;
+			HRESULT hr = objectCollection.GetCount(out uint pcObjects);
+			if (FAILED(hr)) return [];
 
 			List<JumpListItem> items = [];
-
-			hr = pObjectCollection->GetCount(out uint pcObjects);
-
 			for (uint dwIndex = 0U; dwIndex < pcObjects; dwIndex++)
 			{
-				using ComPtr<IUnknown> pObj = default;
-				hr = pObjectCollection->GetAt(dwIndex, IID.IID_IUnknown, (void**)pObj.GetAddressOf());
+				hr = objectCollection.GetAt(dwIndex, IID.IID_IUnknown, out var itemObj);
+				if (FAILED(hr)) continue;
 
-				if (CreateItemFromIUnknown(type, pObj.Get()) is { } item)
+				if (CreateItemFromIUnknown(type, itemObj) is { } item)
 					items.Add(item);
 			}
 
 			return items;
 		}
 
-		private JumpListItem? CreateItemFromIUnknown(JumpListItemType type, IUnknown* pObj)
+		private JumpListItem? CreateItemFromIUnknown(JumpListItemType type, object obj)
 		{
 			HRESULT hr = default;
 
-			using ComPtr<IShellItem> pShellItem = default;
-			hr = pObj->QueryInterface(IID.IID_IShellItem, (void**)pShellItem.GetAddressOf());
-			if (SUCCEEDED(hr))
+			if (obj is IShellItem shellItem)
 			{
 				// Get the display name
 				using ComHeapPtr<char> pwszName = default;
-				hr = pShellItem.Get()->GetDisplayName(SIGDN.SIGDN_NORMALDISPLAY, (PWSTR*)pwszName.GetAddressOf());
-				if (FAILED(hr))
-					return null;
+				hr = shellItem.GetDisplayName(SIGDN.SIGDN_NORMALDISPLAY, (PWSTR*)pwszName.GetAddressOf());
+				if (FAILED(hr)) return null;
 
 				// Get the thumbnail
-				var bitmapImageData = ThumbnailHelper.GetThumbnail(pShellItem.Get());
+				var bitmapImageData = ThumbnailHelper.GetThumbnail(shellItem);
 
-				IShellItem* pShellItemGlobal = null;
-				pShellItem.CopyTo(&pShellItemGlobal);
-
-				return new(type, bitmapImageData, new string(pwszName.Get()), IsPinned((IUnknown*)pShellItem.Get()), JumpListDataType.IShellItem, (IUnknown*)pShellItemGlobal);
+				return new(type, bitmapImageData, new string(pwszName.Get()), IsPinned(shellItem), JumpListDataType.IShellItem, shellItem);
 			}
 			else
 			{
-				using ComPtr<IShellLinkW> pShellLink = default;
-				hr = pObj->QueryInterface(IID.IID_IShellLinkW, (void**)pShellLink.GetAddressOf()).ThrowOnFailure();
-				if (SUCCEEDED(hr))
+				if (obj is IShellLinkW shellLink)
 				{
 					// Get the display name
-					using ComPtr<IPropertyStore> pPropertyStore = default;
-					PROPERTYKEY pKey = PInvoke.PKEY_Title;
-					PROPVARIANT pVar = default;
-					pShellLink.Get()->QueryInterface(IID.IID_IPropertyStore, (void**)pPropertyStore.GetAddressOf());
-					hr = pPropertyStore.Get()->GetValue(&pKey, &pVar);
-					if (FAILED(hr))
-						return null;
+					var propertyStore = (IPropertyStore)shellLink;
+					hr = propertyStore.GetValue(PInvoke.PKEY_Title, out var pVar);
+					if (FAILED(hr)) return null;
 
 					// Get the thumbnail
-					var bitmapImageData = ThumbnailHelper.GetThumbnail(pShellLink.Get());
+					var bitmapImageData = ThumbnailHelper.GetThumbnail(shellLink);
 
-					IShellLinkW* pShellLinkGlobal = null;
-					pShellLink.CopyTo(&pShellLinkGlobal);
-
-					return new(type, bitmapImageData, new string(pVar.Anonymous.Anonymous.Anonymous.pwszVal), IsPinned((IUnknown*)pShellLinkGlobal), JumpListDataType.IShellLink, (IUnknown*)pShellLinkGlobal);
+					return new(type, bitmapImageData, new string(pVar.Anonymous.Anonymous.Anonymous.pwszVal), IsPinned(shellLink), JumpListDataType.IShellLink, shellLink);
 				}
 				else
 				{
@@ -389,77 +326,59 @@ namespace JumpListManager
 			}
 		}
 
-		private bool IsPinned(IUnknown* pObject)
+		private bool IsPinned(object obj)
 		{
 			HRESULT hr = default;
 
-			if (pPinnedItemsObjectCollection is null)
+			if (pinnedItemsObjectCollection is null)
 			{
-				IObjectCollection* pObjectCollection = default;
-				hr = _autoDestListPtr->GetList(DESTLISTTYPE.PINNED, 20, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, (void**)&pObjectCollection);
-				if (FAILED(hr))
-					return false;
+				hr = _autoDestListPtr.GetList(DESTLISTTYPE.PINNED, 20, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+				if (FAILED(hr)) return false;
 
-				pPinnedItemsObjectCollection = pObjectCollection;
+				pinnedItemsObjectCollection = (IObjectCollection)objectCollectionObj;
 			}
 
-			hr = pPinnedItemsObjectCollection->GetCount(out uint cPinnedObjects);
-			if (FAILED(hr))
-				return false;
+			hr = pinnedItemsObjectCollection.GetCount(out uint cPinnedObjects);
+			if (FAILED(hr)) return false;
 
 			for (uint dwIndex = 0U; dwIndex < cPinnedObjects; dwIndex++)
 			{
-				using ComPtr<IUnknown> pPinnedItemObject = default;
-				hr = pPinnedItemsObjectCollection->GetAt(dwIndex, IID.IID_IUnknown, (void**)pPinnedItemObject.GetAddressOf());
+				hr = pinnedItemsObjectCollection.GetAt(dwIndex, IID.IID_IUnknown, out var pinnedItemObj);
 
-				if (IsSameObject(pPinnedItemObject.Get(), pObject))
+				if (IsSameObject(pinnedItemObj, obj))
 					return true;
 			}
 
 			return false;
 		}
 
-		private bool IsSameObject(IUnknown* pObj1, IUnknown* pObj2)
+		private bool IsSameObject(object pObj1, object pObj2)
 		{
 			HRESULT hr = default;
 
-			using ComPtr<IShellItem> pShellItem1 = default;
-			hr = pObj1->QueryInterface(IID.IID_IShellItem, (void**)pShellItem1.GetAddressOf());
-			if (SUCCEEDED(hr))
+			if (pObj1 is IShellItem shellItem)
 			{
-				using ComPtr<IShellItem> pShellItem2 = default;
-				hr = pObj2->QueryInterface(IID.IID_IShellItem, (void**)pShellItem2.GetAddressOf());
-				if (SUCCEEDED(hr))
+				if (pObj2 is IShellItem shellItemOther)
 				{
-					int iOrder = 0;
-
-					hr = pShellItem1.Get()->Compare(
-						pShellItem2.Get(),
-						(uint)(_SICHINTF.SICHINT_CANONICAL | _SICHINTF.SICHINT_TEST_FILESYSPATH_IF_NOT_EQUAL), // 0x30000000
-						&iOrder);
-
+					hr = shellItem.Compare(shellItemOther, (uint)(_SICHINTF.SICHINT_CANONICAL | _SICHINTF.SICHINT_TEST_FILESYSPATH_IF_NOT_EQUAL), out var iOrder); // 0x30000000
 					return iOrder is 0;
 				}
 			}
 			else
 			{
-				using ComPtr<IShellLinkW> pShellLink1 = default;
-				hr = pObj1->QueryInterface(IID.IID_IShellLinkW, (void**)pShellLink1.GetAddressOf());
-				if (SUCCEEDED(hr))
+				if (pObj1 is IShellLinkW shellLink)
 				{
-					using ComPtr<IShellLinkW> pShellLink2 = default;
-					hr = pObj2->QueryInterface(IID.IID_IShellLinkW, (void**)pShellLink2.GetAddressOf());
-					if (SUCCEEDED(hr))
+					if (pObj2 is IShellLinkW shellLinkOther)
 					{
 						char* pwszString1 = (char*)NativeMemory.AllocZeroed(PInvoke.MAX_PATH);
 						char* pwszString2 = (char*)NativeMemory.AllocZeroed(PInvoke.MAX_PATH);
 
 						COMPARESTRING_RESULT compStrResult = default;
 
-						hr = pShellLink1.Get()->GetPath(pwszString1, (int)PInvoke.MAX_PATH /*260*/, null, (uint)SLGP_FLAGS.SLGP_RAWPATH /*0x4*/);
+						hr = shellLink.GetPath(pwszString1, (int)PInvoke.MAX_PATH /*260*/, null, (uint)SLGP_FLAGS.SLGP_RAWPATH /*0x4*/);
 						if (SUCCEEDED(hr))
 						{
-							hr = pShellLink2.Get()->GetPath(pwszString2, (int)PInvoke.MAX_PATH /*260*/, null, (uint)SLGP_FLAGS.SLGP_RAWPATH /*0x4*/);
+							hr = shellLinkOther.GetPath(pwszString2, (int)PInvoke.MAX_PATH /*260*/, null, (uint)SLGP_FLAGS.SLGP_RAWPATH /*0x4*/);
 							if (SUCCEEDED(hr))
 							{
 								compStrResult = PInvoke.CompareStringOrdinal(pwszString1, -1, pwszString2, -1, BOOL.FALSE);
@@ -468,10 +387,10 @@ namespace JumpListManager
 
 								if (compStrResult is COMPARESTRING_RESULT.CSTR_EQUAL /*2*/)
 								{
-									hr = pShellLink1.Get()->GetArguments(pwszString1, (int)PInvoke.MAX_PATH);
+									hr = shellLink.GetArguments(pwszString1, (int)PInvoke.MAX_PATH);
 									if (SUCCEEDED(hr))
 									{
-										hr = pShellLink2.Get()->GetArguments(pwszString2, (int)PInvoke.MAX_PATH);
+										hr = shellLinkOther.GetArguments(pwszString2, (int)PInvoke.MAX_PATH);
 										if (SUCCEEDED(hr))
 										{
 											compStrResult = PInvoke.CompareStringOrdinal(pwszString1, -1, pwszString2, -1, BOOL.FALSE);
@@ -480,21 +399,16 @@ namespace JumpListManager
 
 											if (compStrResult is COMPARESTRING_RESULT.CSTR_EQUAL /*2*/)
 											{
-												PROPERTYKEY pKey = PInvoke.PKEY_Title;
+												var propertyStore = (IPropertyStore)shellLink;
+												hr = propertyStore.GetValue(PInvoke.PKEY_Title, out var propVar1);
 
-												using ComPtr<IPropertyStore> pPropertyStore1 = default;
-												PROPVARIANT pPropVar1 = default;
-												pShellLink1.Get()->QueryInterface(IID.IID_IPropertyStore, (void**)pPropertyStore1.GetAddressOf());
-												hr = pPropertyStore1.Get()->GetValue(&pKey, &pPropVar1);
+												var propertyStoreOther = (IPropertyStore)shellLinkOther;
+												hr = propertyStoreOther.GetValue(PInvoke.PKEY_Title, out var propVarOther);
 
-												using ComPtr<IPropertyStore> pPropertyStore2 = default;
-												PROPVARIANT pPropVar2 = default;
-												pShellLink2.Get()->QueryInterface(IID.IID_IPropertyStore, (void**)pPropertyStore2.GetAddressOf());
-												hr = pPropertyStore2.Get()->GetValue(&pKey, &pPropVar2);
-
-												compStrResult = PInvoke.CompareStringOrdinal(pPropVar1.Anonymous.Anonymous.Anonymous.pwszVal, -1, pPropVar2.Anonymous.Anonymous.Anonymous.pwszVal, -1, BOOL.FALSE);
-												PInvoke.CoTaskMemFree(pPropVar1.Anonymous.Anonymous.Anonymous.pwszVal);
-												PInvoke.CoTaskMemFree(pPropVar2.Anonymous.Anonymous.Anonymous.pwszVal);
+												// TODO: Define and use the inline functions
+												compStrResult = PInvoke.CompareStringOrdinal(propVar1.Anonymous.Anonymous.Anonymous.pwszVal, -1, propVarOther.Anonymous.Anonymous.Anonymous.pwszVal, -1, BOOL.FALSE);
+												PInvoke.CoTaskMemFree(propVar1.Anonymous.Anonymous.Anonymous.pwszVal);
+												PInvoke.CoTaskMemFree(propVarOther.Anonymous.Anonymous.Anonymous.pwszVal);
 
 												return compStrResult is COMPARESTRING_RESULT.CSTR_EQUAL /*2*/;
 											}
@@ -508,14 +422,6 @@ namespace JumpListManager
 			}
 
 			return false;
-		}
-
-		public void Dispose()
-		{
-			if (_autoDestListPtr is not null) ((IUnknown*)_autoDestListPtr)->Release();
-			if (_customDestListPtr is not null) ((IUnknown*)_customDestListPtr)->Release();
-			if (_customDestList2Ptr is not null) ((IUnknown*)_customDestList2Ptr)->Release();
-			if (pPinnedItemsObjectCollection is not null) ((IUnknown*)pPinnedItemsObjectCollection)->Release();
 		}
 	}
 }

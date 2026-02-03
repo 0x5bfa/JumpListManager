@@ -73,51 +73,50 @@ namespace JumpListManager.ViewModels
 			HRESULT hr = default;
 
 			// Get the shell folder item
-			using ComPtr<IShellItem> pShellItem = default;
-			fixed (char* pwszShellAppsFolderPath = "Shell:AppsFolder")
-				hr = PInvoke.SHCreateItemFromParsingName(pwszShellAppsFolderPath, null, IID.IID_IShellItem, (void**)pShellItem.GetAddressOf());
+			hr = PInvoke.SHCreateItemFromParsingName("Shell:AppsFolder", null, typeof(IShellItem).GUID, out var shellItemObj);
+			var shellItem = (IShellItem)shellItemObj;
 
 			// Get the enumerator of the shell folder
-			using ComPtr<IEnumShellItems> pEnumShellItems = default;
-			hr = pShellItem.Get()->BindToHandler(null, BHID.BHID_EnumItems, IID.IID_IEnumShellItems, (void**)pEnumShellItems.GetAddressOf());
+			hr = shellItem.BindToHandler(null, BHID.BHID_EnumItems, IID.IID_IEnumShellItems, out var enumShellItemsObj);
+			var enumShellItems = (IEnumShellItems)enumShellItemsObj;
 
 			// Enumerate all child items one by one
-			ComPtr<IShellItem> pChildShellItem = default;
-			while (pEnumShellItems.Get()->Next(1, pChildShellItem.GetAddressOf()) == HRESULT.S_OK)
+			var childItemsArray = new IShellItem[1];
+			while (enumShellItems.Next(1, childItemsArray) == HRESULT.S_OK)
 			{
+				var childItem = childItemsArray[0];
+
 				// Get the application name
 				using ComHeapPtr<char> pName = default;
-				hr = pChildShellItem.Get()->GetDisplayName(SIGDN.SIGDN_PARENTRELATIVEFORUI, (PWSTR*)pName.GetAddressOf());
+				hr = childItem.GetDisplayName(SIGDN.SIGDN_PARENTRELATIVEFORUI, (PWSTR*)pName.GetAddressOf());
 
 				// Get the AMUID from the property store of the item
-				ComPtr<IPropertyStore> pPropertyStore = default;
-				PROPERTYKEY pKey = PInvoke.PKEY_AppUserModel_ID;
-				PROPVARIANT pVar = default;
-				hr = pChildShellItem.Get()->BindToHandler(null, BHID.BHID_PropertyStore, IID.IID_IPropertyStore, (void**)pPropertyStore.GetAddressOf());
-				hr = pPropertyStore.Get()->GetValue(&pKey, &pVar);
+				hr = childItem.BindToHandler(null, BHID.BHID_PropertyStore, IID.IID_IPropertyStore, out var propertyStoreObj);
+
+				var propertyStore = (IPropertyStore)propertyStoreObj;
+
+				hr = propertyStore.GetValue(PInvoke.PKEY_AppUserModel_ID, out var pVar);
 
 				// Get the thumbnail
-				var bitmapImageData = ThumbnailHelper.GetThumbnail(pChildShellItem.Get(), 64);
+				var bitmapImageData = ThumbnailHelper.GetThumbnail(childItem, 64);
 
 				// Insert the new item
 				ApplicationItems.Add(new() { Icon = bitmapImageData, Name = new(pName.Get()), AppUserModelID = new(pVar.Anonymous.Anonymous.Anonymous.pwszVal) });
 
 				// Dispose the unmanaged memory
 				PInvoke.CoTaskMemFree(pVar.Anonymous.Anonymous.Anonymous.pwszVal);
-				pChildShellItem.Dispose();
 			}
 		}
 
 		public unsafe void EnumerateJumpListItems()
 		{
-			JumpListItems = new() { IsSourceGrouped = true, };
-			foreach (var list in GroupedJumpListItems) foreach (var item in list) item.Dispose();
+			JumpListItems = new() { IsSourceGrouped = true };
 			GroupedJumpListItems.Clear();
 
 			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
 
 			// Initialize the jump list manager
-			using JumpList manager = JumpList.Create(amuid)
+			JumpList manager = JumpList.Create(amuid)
 				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
 
 			// Insert the pinned items
@@ -196,7 +195,7 @@ namespace JumpListManager.ViewModels
 		{
 			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
 
-			using JumpList manager = JumpList.Create(amuid)
+			JumpList manager = JumpList.Create(amuid)
 				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
 
 			manager.ClearAutomaticDestinations();
@@ -219,7 +218,7 @@ namespace JumpListManager.ViewModels
 				info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
 
 				using ComHeapPtr<ITEMIDLIST> thisPidl = default;
-				hr = PInvoke.SHGetIDListFromObject((IUnknown*)SelectedJumpListItem.NativeObjectPtr, thisPidl.GetAddressOf());
+				hr = PInvoke.SHGetIDListFromObject(SelectedJumpListItem.ComObject, thisPidl.GetAddressOf());
 
 				fixed (char* pwszVerb = "open")
 				{
@@ -234,8 +233,8 @@ namespace JumpListManager.ViewModels
 				PWSTR pwszPath = (PWSTR)NativeMemory.AllocZeroed(PInvoke.MAX_PATH);
 				PWSTR pwszArgs = (PWSTR)NativeMemory.AllocZeroed(PInvoke.MAX_PATH);
 
-				hr = ((IShellLinkW*)SelectedJumpListItem.NativeObjectPtr)->GetPath(pwszPath, (int)PInvoke.MAX_PATH, null, 4U);
-				hr = ((IShellLinkW*)SelectedJumpListItem.NativeObjectPtr)->GetArguments(pwszArgs, (int)PInvoke.MAX_PATH);
+				hr = ((IShellLinkW)SelectedJumpListItem.ComObject).GetPath(pwszPath, (int)PInvoke.MAX_PATH, null, 4U);
+				hr = ((IShellLinkW)SelectedJumpListItem.ComObject).GetArguments(pwszArgs, (int)PInvoke.MAX_PATH);
 
 				SHELLEXECUTEINFOW info = default;
 				info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
@@ -243,7 +242,7 @@ namespace JumpListManager.ViewModels
 				info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
 
 				using ComHeapPtr<ITEMIDLIST> thisPidl = default;
-				hr = PInvoke.SHGetIDListFromObject((IUnknown*)SelectedJumpListItem.NativeObjectPtr, thisPidl.GetAddressOf());
+				hr = PInvoke.SHGetIDListFromObject(SelectedJumpListItem.ComObject, thisPidl.GetAddressOf());
 
 				info.lpFile = pwszPath;
 				info.lpParameters = pwszArgs;
@@ -257,17 +256,17 @@ namespace JumpListManager.ViewModels
 			if (SelectedJumpListItem is null ||
 				SelectedJumpListItem.Type is not JumpListItemType.Automatic ||
 				SelectedJumpListItem.DataType is not JumpListDataType.IShellItem ||
-				SelectedJumpListItem.NativeObjectPtr is null)
+				SelectedJumpListItem.ComObject is null)
 				return;
 
 			HRESULT hr = default;
 
-			using ComPtr<IShellItem> parentsi = default;
 			using ComHeapPtr<ITEMIDLIST> thisPidl = default;
 			using ComHeapPtr<ITEMIDLIST> parentPidl = default;
-			hr = ((IShellItem*)SelectedJumpListItem.NativeObjectPtr)->GetParent(parentsi.GetAddressOf());
-			hr = PInvoke.SHGetIDListFromObject((IUnknown*)SelectedJumpListItem.NativeObjectPtr, thisPidl.GetAddressOf());
-			hr = PInvoke.SHGetIDListFromObject((IUnknown*)parentsi.Get(), parentPidl.GetAddressOf());
+
+			hr = ((IShellItem)SelectedJumpListItem.ComObject).GetParent(out var parentItem);
+			hr = PInvoke.SHGetIDListFromObject(SelectedJumpListItem.ComObject, thisPidl.GetAddressOf());
+			hr = PInvoke.SHGetIDListFromObject(parentItem, parentPidl.GetAddressOf());
 			ITEMIDLIST* childPidl = PInvoke.ILFindLastID(thisPidl.Get());
 
 			hr = PInvoke.SHOpenFolderAndSelectItems(parentPidl.Get(), 1, &childPidl, 0U);
@@ -279,7 +278,7 @@ namespace JumpListManager.ViewModels
 			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
 			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
 
-			using JumpList manager = JumpList.Create(amuid)
+			JumpList manager = JumpList.Create(amuid)
 				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
 
 			manager.PinItem(selectedJumpListItem);
@@ -293,7 +292,7 @@ namespace JumpListManager.ViewModels
 			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
 			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
 
-			using JumpList manager = JumpList.Create(amuid)
+			JumpList manager = JumpList.Create(amuid)
 				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
 
 			manager.UnpinItem(selectedJumpListItem);
@@ -303,7 +302,7 @@ namespace JumpListManager.ViewModels
 
 		private void ExecuteRemoveItemCommand()
 		{
-			using JumpList manager = JumpList.Create(SelectedApplicationUserModelID!)
+			JumpList manager = JumpList.Create(SelectedApplicationUserModelID!)
 				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
 
 			manager.RemoveItem(SelectedJumpListItem!);
@@ -316,7 +315,7 @@ namespace JumpListManager.ViewModels
 			if (SelectedJumpListItem is null ||
 				SelectedJumpListItem.Type is not JumpListItemType.Automatic ||
 				SelectedJumpListItem.DataType is not JumpListDataType.IShellItem ||
-				SelectedJumpListItem.NativeObjectPtr is null)
+				SelectedJumpListItem.ComObject is null)
 				return;
 
 			HRESULT hr = default;
@@ -327,7 +326,7 @@ namespace JumpListManager.ViewModels
 			info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
 
 			using ComHeapPtr<ITEMIDLIST> thisPidl = default;
-			hr = PInvoke.SHGetIDListFromObject((IUnknown*)SelectedJumpListItem.NativeObjectPtr, thisPidl.GetAddressOf());
+			hr = PInvoke.SHGetIDListFromObject(SelectedJumpListItem.ComObject, thisPidl.GetAddressOf());
 
 			fixed (char* pwszVerb = "properties")
 			{

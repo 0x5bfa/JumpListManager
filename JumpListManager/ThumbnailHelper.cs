@@ -16,7 +16,7 @@ namespace JumpListManager
 	{
 		private static (Guid Format, Guid Encorder)[]? GdiEncoders;
 
-		public static byte[]? GetThumbnail(IShellItem* pShellItem, int size = 32)
+		public static byte[]? GetThumbnail(IShellItem item, int size = 32)
 		{
 			HRESULT hr = default;
 			HBITMAP hBitmap = default;
@@ -24,12 +24,11 @@ namespace JumpListManager
 
 			try
 			{
-				using ComPtr<IShellItemImageFactory> pShellItemImageFactory = default;
-				hr = pShellItem->QueryInterface(IID.IID_IShellItemImageFactory, (void**)pShellItemImageFactory.GetAddressOf());
-				if (FAILED(hr) || pShellItemImageFactory.IsNull) return null;
+				var shellItemImageFactory = (IShellItemImageFactory)item;
+				if (shellItemImageFactory is null) return null;
 
 				// Get HBITMAP
-				hr = pShellItemImageFactory.Get()->GetImage(new(size, size), SIIGBF.SIIGBF_ICONONLY, &hBitmap);
+				hr = shellItemImageFactory.GetImage(new(size, size), SIIGBF.SIIGBF_ICONONLY, &hBitmap);
 				if (FAILED(hr) || hBitmap.IsNull) return null;
 
 				// Retrieve BITMAP data
@@ -66,10 +65,9 @@ namespace JumpListManager
 			}
 		}
 
-		public static byte[]? GetThumbnail(IShellLinkW* pShellLink, int size = 32)
+		public static byte[]? GetThumbnail(IShellLinkW link, int size = 32)
 		{
 			HRESULT hr = default;
-			int nIconIndex = 0;
 			char* pwszIconLocation = null;
 			HICON hIconLarge = default;
 			HICON hIconSmall = default;
@@ -79,14 +77,13 @@ namespace JumpListManager
 			{
 				pwszIconLocation = (char*)NativeMemory.Alloc(256);
 
-				hr = pShellLink->GetIconLocation(pwszIconLocation, 256, &nIconIndex);
+				hr = link.GetIconLocation(pwszIconLocation, 256, out var nIconIndex);
 				if (FAILED(hr)) return null;
 
-				using ComPtr<IExtractIconW> pExtractIcon = default;
-				hr = pShellLink->QueryInterface(IID.IID_IExtractIconW, (void**)pExtractIcon.GetAddressOf());
+				var extractIconW = (IExtractIconW)link;
 				if (FAILED(hr)) return null;
 
-				hr = pExtractIcon.Get()->Extract(pwszIconLocation, (uint)nIconIndex, &hIconLarge, &hIconSmall, (uint)size);
+				hr = extractIconW.Extract(pwszIconLocation, (uint)nIconIndex, &hIconLarge, &hIconSmall, (uint)size);
 				if (FAILED(hr) || hIconLarge.IsNull || hIconSmall.IsNull) return null;
 
 				// Use GDI+ to convert the icon to a bitmap with alpha mask
@@ -128,23 +125,22 @@ namespace JumpListManager
 					encoder = GetEncoderClsid(format);
 				}
 
-				using ComPtr<IStream> pStream = default;
-				HRESULT hr = PInvoke.CreateStreamOnHGlobal(HGLOBAL.Null, true, pStream.GetAddressOf());
+				HRESULT hr = PInvoke.CreateStreamOnHGlobal(HGLOBAL.Null, true, out var stream);
 				if (hr.ThrowOnFailure().Failed)
 					return false;
 
-				if (PInvoke.GdipSaveImageToStream((GpImage*)gpBitmap, pStream.Get(), &encoder, (EncoderParameters*)null) is not Status.Ok)
+				if (PInvoke.GdipSaveImageToStream((GpImage*)gpBitmap, stream, &encoder, (EncoderParameters*)null) is not Status.Ok)
 					return false;
 
 				STATSTG stat = default;
-				hr = pStream.Get()->Stat(&stat, (uint)STATFLAG.STATFLAG_NONAME);
+				hr = stream.Stat(&stat, STATFLAG.STATFLAG_NONAME);
 				if (hr.ThrowOnFailure().Failed)
 					return false;
 
 				ulong statSize = stat.cbSize & 0xFFFFFFFF;
 				pRawThumbnailData = (byte*)NativeMemory.Alloc((nuint)statSize);
-				pStream.Get()->Seek(0L, (System.IO.SeekOrigin)STREAM_SEEK.STREAM_SEEK_SET, null);
-				hr = pStream.Get()->Read(pRawThumbnailData, (uint)statSize);
+				stream.Seek(0L, (SeekOrigin)STREAM_SEEK.STREAM_SEEK_SET, null);
+				hr = stream.Read(pRawThumbnailData, (uint)statSize);
 				if (hr.ThrowOnFailure().Failed)
 					return false;
 

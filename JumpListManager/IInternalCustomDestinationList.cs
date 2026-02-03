@@ -3,95 +3,53 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Windows.Win32.Foundation;
 
 namespace Windows.Win32.System.Com
 {
-	/// <summary>
-	/// Defines unmanaged raw vtable for the <see cref="IInternalCustomDestinationList"/> interface.
-	/// </summary>
-	/// <remarks>
-	/// - <a href="https://github.com/GigabyteProductions/classicshell/blob/HEAD/src/ClassicStartMenu/ClassicStartMenuDLL/JumpLists.cpp"/>
-	/// </remarks>
-	public unsafe partial struct IInternalCustomDestinationList
+	[GeneratedComInterface, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("507101CD-F6AD-46C8-8E20-EEB9E6BAC47F")]
+	public unsafe partial interface IInternalCustomDestinationList
 	{
-#pragma warning disable CS0649 // Field 'field' is never assigned to, and will always have its default value 'value'
-		private void** lpVtbl;
-#pragma warning restore CS0649 // Field 'field' is never assigned to, and will always have its default value 'value'
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT SetMinItems(uint dwMinItems);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT SetMinItems(uint dwMinItems)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, uint, int>)lpVtbl[3])(
-				(IInternalCustomDestinationList*)Unsafe.AsPointer(ref this), dwMinItems);
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT SetApplicationID(PCWSTR pszAppID);
 
-		/// <summary>
-		/// Initializes this instance of <see cref="IInternalCustomDestinationList"/> with the specified Application User Model ID (AMUID).
-		/// </summary>
-		/// <param name="pszAppID">The Application User Model ID to initialize this instance of <see cref="IInternalCustomDestinationList"/> with.</param>
-		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise.</returns>
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT SetApplicationID(PCWSTR pszAppID)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, PCWSTR, int>)lpVtbl[4])(
-				(IInternalCustomDestinationList*)Unsafe.AsPointer(ref this), pszAppID);
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT GetSlotCount(out uint pdwSlotCount);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT GetSlotCount(uint* pdwSlotCount)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, uint*, int>)lpVtbl[5])(
-				(IInternalCustomDestinationList*)Unsafe.AsPointer(ref this), pdwSlotCount);
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT GetCategoryCount(out uint pdwCategoryCount);
 
-		/// <summary>
-		/// Gets the number of categories in the custom destination list.
-		/// </summary>
-		/// <param name="pdwCategoryCount">A pointer that points to a valid <see langword="uint"/> var.</param>
-		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise.</returns>
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT GetCategoryCount(uint* pdwCategoryCount)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, uint*, int>)lpVtbl[6])(
-				(IInternalCustomDestinationList*)Unsafe.AsPointer(ref this), pdwCategoryCount);
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT GetCategory(uint index, GETCATFLAG flags, out APPDESTCATEGORY pCategory);
 
-		/// <summary>
-		/// Gets the category at the specified index in the custom destination list.
-		/// </summary>
-		/// <param name="index">The index to get the category in the custom destination list at.</param>
-		/// <param name="flags">The flags to filter up the queried destinations.</param>
-		/// <param name="pCategory">A pointer that points to a valid <see cref="APPDESTCATEGORY"/> var.</param>
-		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise.</returns>
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT GetCategory(uint index, GETCATFLAG flags, APPDESTCATEGORY* pCategory)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, uint, GETCATFLAG, APPDESTCATEGORY*, int>)lpVtbl[7])(
-				(IInternalCustomDestinationList*)Unsafe.AsPointer(ref this), index, flags, pCategory);
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT DeleteCategory(uint a1, int a2);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT DeleteCategory(uint a1, int a2)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, int>)lpVtbl[8])(
-				(IInternalCustomDestinationList*)Unsafe.AsPointer(ref this));
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT EnumerateCategoryDestinations(uint index, Guid* riid, [MarshalAs(UnmanagedType.Interface)] out object ppvObject);
 
-		/// <summary>
-		/// Enumerates the destinations at the specific index in the categories in the custom destinations.
-		/// </summary>
-		/// <param name="index">The index to get the destinations at in the categories.</param>
-		/// <param name="riid">A reference to the interface identifier (IID) of the interface being queried for.</param>
-		/// <param name="ppvObject">The address of a pointer to an interface with the IID specified in the riid parameter.</param>
-		/// <returns>Returns <see cref="HRESULT.S_OK"/> if successful, or an error value otherwise.</returns>
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT EnumerateCategoryDestinations(uint index, Guid* riid, void** ppvObject)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, uint, Guid*, void**, int>)lpVtbl[9])(
-				(IInternalCustomDestinationList*)Unsafe.AsPointer(ref this), index, riid, ppvObject);
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT RemoveDestination([MarshalAs(UnmanagedType.Interface)] object pObject);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT RemoveDestination(IUnknown* pObject)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, IUnknown*, int>)lpVtbl[10])
-			((IInternalCustomDestinationList*)Unsafe.AsPointer(ref this), pObject);
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT HasListEx(out int a1, out int a2);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT HasListEx(int* a1, int* a2)
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, int>)lpVtbl[11])
-			((IInternalCustomDestinationList*)Unsafe.AsPointer(ref this));
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public HRESULT ClearRemovedDestinations()
-			=> (HRESULT)((delegate* unmanaged[MemberFunction]<IInternalCustomDestinationList*, int>)lpVtbl[12])
-			((IInternalCustomDestinationList*)Unsafe.AsPointer(ref this));
+		[PreserveSig]
+		[return: MarshalAs(UnmanagedType.Error)]
+		HRESULT ClearRemovedDestinations();
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
