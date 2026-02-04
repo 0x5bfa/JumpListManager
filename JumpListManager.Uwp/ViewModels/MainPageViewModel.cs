@@ -1,0 +1,361 @@
+﻿// Copyright (c) 0x5BFA. All rights reserved.
+// Licensed under the MIT License.
+
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using JumpListManager.Data;
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using Windows.UI.Xaml.Data;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.System.Com;
+using Windows.Win32.System.Com.StructuredStorage;
+using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.Shell.Common;
+using Windows.Win32.UI.Shell.PropertiesSystem;
+using Windows.Win32.UI.WindowsAndMessaging;
+
+namespace JumpListManager.ViewModels
+{
+	public class MainPageViewModel : ObservableObject
+	{
+		public ObservableCollection<ApplicationItem> ApplicationItems { get; set; } = [];
+
+		private ObservableCollection<JumpListGroupItem> GroupedJumpListItems { get; set; } = [];
+		public CollectionViewSource? JumpListItems { get => field; set => SetProperty(ref field, value); }
+
+		public ObservableCollection<BaseCommandItem> CommandItems { get; set; } = [];
+
+		public int SelectedIndexOfApplicationItems { get; set; } = 0;
+
+		public int SelectedIndexOfJumpListItems { get; set; } = 0;
+
+		public JumpListItem? SelectedJumpListItem
+		{
+			get
+			{
+				if (SelectedIndexOfJumpListItems is -1)
+					return null;
+				var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
+				return flattenItems.ElementAt(SelectedIndexOfJumpListItems);
+			}
+		}
+
+		public string? SelectedApplicationUserModelID
+		{
+			get
+			{
+				if (SelectedIndexOfApplicationItems is -1)
+					return null;
+				return ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+			}
+		}
+
+		public ICommand OpenCrcHashCalculatorCommand { get; }
+
+		public ICommand OpenAboutDialogCommand { get; }
+
+		public MainPageViewModel()
+		{
+			EnumerateApplicationItems();
+
+			OpenCrcHashCalculatorCommand = new AsyncRelayCommand(ExecuteOpenCrcHashCalculatorCommand);
+			OpenAboutDialogCommand = new AsyncRelayCommand(ExecuteOpenAboutDialogCommand);
+		}
+
+		public unsafe void EnumerateApplicationItems()
+		{
+			ApplicationItems.Clear();
+
+			HRESULT hr = default;
+
+			// Get the shell folder item
+			hr = PInvoke.SHCreateItemFromParsingName("Shell:AppsFolder", null, typeof(IShellItem).GUID, out var shellItemObj);
+			var shellItem = (IShellItem)shellItemObj;
+
+			// Get the enumerator of the shell folder
+			hr = shellItem.BindToHandler(null, BHID.BHID_EnumItems, IID.IID_IEnumShellItems, out var enumShellItemsObj);
+			var enumShellItems = (IEnumShellItems)enumShellItemsObj;
+
+			// Enumerate all child items one by one
+			var childItemsArray = new IShellItem[1];
+			while (enumShellItems.Next(1, childItemsArray) == HRESULT.S_OK)
+			{
+				var childItem = childItemsArray[0];
+
+				// Get the application name
+				using ComHeapPtr<char> pName = default;
+				hr = childItem.GetDisplayName(SIGDN.SIGDN_PARENTRELATIVEFORUI, (PWSTR*)pName.GetAddressOf());
+
+				// Get the AMUID from the property store of the item
+				hr = childItem.BindToHandler(null, BHID.BHID_PropertyStore, IID.IID_IPropertyStore, out var propertyStoreObj);
+
+				var propertyStore = (IPropertyStore)propertyStoreObj;
+
+				hr = propertyStore.GetValue(PInvoke.PKEY_AppUserModel_ID, out var pVar);
+
+				// Get the thumbnail
+				var bitmapImageData = ThumbnailHelper.GetThumbnail(childItem, 64);
+
+				// Insert the new item
+				ApplicationItems.Add(new() { Icon = bitmapImageData, Name = new(pName.Get()), AppUserModelID = new(pVar.Anonymous.Anonymous.Anonymous.pwszVal) });
+
+				// Dispose the unmanaged memory
+				PInvoke.CoTaskMemFree(pVar.Anonymous.Anonymous.Anonymous.pwszVal);
+			}
+		}
+
+		public unsafe void EnumerateJumpListItems()
+		{
+			JumpListItems = new() { IsSourceGrouped = true };
+			GroupedJumpListItems.Clear();
+
+			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+
+			// Initialize the jump list manager
+			JumpList manager = JumpList.Create(amuid)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			// Insert the pinned items
+			if (manager.EnumeratePinnedItems() is { Count: not 0 } pinnedItems)
+				GroupedJumpListItems.Add(pinnedItems);
+
+			// Insert the recent items
+			if (manager.EnumerateRecentItems() is { Count: not 0 } recentItems)
+				GroupedJumpListItems.Add(recentItems);
+
+			// Insert the frequent items
+			if (manager.EnumerateFrequentItems() is { Count: not 0 } frequentItems)
+				GroupedJumpListItems.Add(frequentItems);
+
+			// Insert the custom destination items
+			int count = manager.GetCustomDestinationsCount();
+			for (uint index = 0U; index < (uint)count; index++)
+				if (manager.EnumerateCustomDestinationsAt(index) is { } list)
+					GroupedJumpListItems.Add(list);
+
+			// Insert the task items
+			if (manager.EnumerateTasks() is { Count: not 0 } taskItems)
+				GroupedJumpListItems.Add(taskItems);
+
+			JumpListItems.Source = new ObservableCollection<JumpListGroupItem>(GroupedJumpListItems);
+		}
+
+		public unsafe void EnumerateContextMenuItems()
+		{
+			CommandItems.Clear();
+
+			if (SelectedIndexOfJumpListItems is -1)
+				return;
+
+			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
+			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
+
+			CommandItems.Add(new CommandButtonItem("\uE894", "Delete the all MRU", new RelayCommand(ExecuteClearAutomaticDestinationsCommand)));
+
+			//CommandItems.Add(new CommandButtonItem("\uE894", "Delete this category", new RelayCommand(ExecuteClearAutomaticDestinationsCommand)));
+
+			CommandItems.Add(new CommandSeparatorItem());
+
+			CommandItems.Add(new CommandButtonItem("\uE737", "Open", new RelayCommand(ExecuteOpenCommand)));
+
+			if (selectedJumpListItem.Type is not JumpListItemType.Task)
+			{
+				if (selectedJumpListItem.Type is JumpListItemType.Automatic &&
+					selectedJumpListItem.DataType is JumpListDataType.IShellItem)
+				{
+					CommandItems.Add(new CommandButtonItem("\uED43", "Open file location", new RelayCommand(ExecuteOpenFileLocationCommand)));
+				}
+
+				CommandItems.Add(new CommandSeparatorItem());
+
+				if (selectedJumpListItem.IsPinned)
+				{
+					CommandItems.Add(new CommandButtonItem("\uE718", "Unpin from the list", new RelayCommand(ExecuteUnpinItemCommand)));
+				}
+				else
+				{
+					CommandItems.Add(new CommandButtonItem("\uE718", "Pin to the list", new RelayCommand(ExecutePinItemCommand)));
+					CommandItems.Add(new CommandButtonItem("\uE74D", "Remove from the list", new RelayCommand(ExecuteRemoveItemCommand)));
+				}
+
+				if (selectedJumpListItem.Type is JumpListItemType.Automatic)
+				{
+					CommandItems.Add(new CommandSeparatorItem());
+
+					CommandItems.Add(new CommandButtonItem("\uE90F", "Properties", new RelayCommand(ExecuteOpenPropertiesCommand)));
+				}
+			}
+		}
+
+		public unsafe void ExecuteClearAutomaticDestinationsCommand()
+		{
+			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+
+			JumpList manager = JumpList.Create(amuid)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			manager.ClearAutomaticDestinations();
+
+			EnumerateJumpListItems();
+		}
+
+		private unsafe void ExecuteOpenCommand()
+		{
+			if (SelectedJumpListItem is null)
+				return;
+
+			HRESULT hr = default;
+
+			if (SelectedJumpListItem.DataType is JumpListDataType.IShellItem)
+			{
+				SHELLEXECUTEINFOW info = default;
+				info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
+				info.fMask = PInvoke.SEE_MASK_INVOKEIDLIST | PInvoke.SEE_MASK_FLAG_NO_UI | PInvoke.SEE_MASK_FLAG_DDEWAIT;
+				info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
+
+				using ComHeapPtr<ITEMIDLIST> thisPidl = default;
+				hr = PInvoke.SHGetIDListFromObject(SelectedJumpListItem.ComObject, thisPidl.GetAddressOf());
+
+				fixed (char* pwszVerb = "open")
+				{
+					info.lpVerb = pwszVerb;
+					info.lpIDList = thisPidl.Get();
+
+					PInvoke.ShellExecuteEx(&info);
+				}
+			}
+			else if (SelectedJumpListItem.DataType is JumpListDataType.IShellLink)
+			{
+				PWSTR pwszPath = (PWSTR)NativeMemory.AllocZeroed(PInvoke.MAX_PATH);
+				PWSTR pwszArgs = (PWSTR)NativeMemory.AllocZeroed(PInvoke.MAX_PATH);
+
+				hr = ((IShellLinkW)SelectedJumpListItem.ComObject).GetPath(pwszPath, (int)PInvoke.MAX_PATH, null, 4U);
+				hr = ((IShellLinkW)SelectedJumpListItem.ComObject).GetArguments(pwszArgs, (int)PInvoke.MAX_PATH);
+
+				SHELLEXECUTEINFOW info = default;
+				info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
+				info.fMask = PInvoke.SEE_MASK_INVOKEIDLIST | PInvoke.SEE_MASK_FLAG_NO_UI | PInvoke.SEE_MASK_FLAG_DDEWAIT;
+				info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
+
+				using ComHeapPtr<ITEMIDLIST> thisPidl = default;
+				hr = PInvoke.SHGetIDListFromObject(SelectedJumpListItem.ComObject, thisPidl.GetAddressOf());
+
+				info.lpFile = pwszPath;
+				info.lpParameters = pwszArgs;
+
+				PInvoke.ShellExecuteEx(&info);
+			}
+		}
+
+		private unsafe void ExecuteOpenFileLocationCommand()
+		{
+			if (SelectedJumpListItem is null ||
+				SelectedJumpListItem.Type is not JumpListItemType.Automatic ||
+				SelectedJumpListItem.DataType is not JumpListDataType.IShellItem ||
+				SelectedJumpListItem.ComObject is null)
+				return;
+
+			HRESULT hr = default;
+
+			using ComHeapPtr<ITEMIDLIST> thisPidl = default;
+			using ComHeapPtr<ITEMIDLIST> parentPidl = default;
+
+			hr = ((IShellItem)SelectedJumpListItem.ComObject).GetParent(out var parentItem);
+			hr = PInvoke.SHGetIDListFromObject(SelectedJumpListItem.ComObject, thisPidl.GetAddressOf());
+			hr = PInvoke.SHGetIDListFromObject(parentItem, parentPidl.GetAddressOf());
+			ITEMIDLIST* childPidl = PInvoke.ILFindLastID(thisPidl.Get());
+
+			hr = PInvoke.SHOpenFolderAndSelectItems(parentPidl.Get(), 1, &childPidl, 0U);
+		}
+
+		private void ExecutePinItemCommand()
+		{
+			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
+			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
+
+			JumpList manager = JumpList.Create(amuid)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			manager.PinItem(selectedJumpListItem);
+
+			EnumerateJumpListItems();
+		}
+
+		private void ExecuteUnpinItemCommand()
+		{
+			var amuid = ApplicationItems.ElementAt(SelectedIndexOfApplicationItems).AppUserModelID;
+			var flattenItems = GroupedJumpListItems.SelectMany(group => group).ToList();
+			var selectedJumpListItem = flattenItems.ElementAt(SelectedIndexOfJumpListItems);
+
+			JumpList manager = JumpList.Create(amuid)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			manager.UnpinItem(selectedJumpListItem);
+
+			EnumerateJumpListItems();
+		}
+
+		private void ExecuteRemoveItemCommand()
+		{
+			JumpList manager = JumpList.Create(SelectedApplicationUserModelID!)
+				?? throw new InvalidOperationException($"Failed to initialize {nameof(JumpListManager)}.");
+
+			manager.RemoveItem(SelectedJumpListItem!);
+
+			EnumerateJumpListItems();
+		}
+
+		private unsafe void ExecuteOpenPropertiesCommand()
+		{
+			if (SelectedJumpListItem is null ||
+				SelectedJumpListItem.Type is not JumpListItemType.Automatic ||
+				SelectedJumpListItem.DataType is not JumpListDataType.IShellItem ||
+				SelectedJumpListItem.ComObject is null)
+				return;
+
+			HRESULT hr = default;
+
+			SHELLEXECUTEINFOW info = default;
+			info.cbSize = (uint)sizeof(SHELLEXECUTEINFOW);
+			info.fMask = PInvoke.SEE_MASK_INVOKEIDLIST | PInvoke.SEE_MASK_FLAG_NO_UI | PInvoke.SEE_MASK_FLAG_DDEWAIT;
+			info.nShow = (int)SHOW_WINDOW_CMD.SW_SHOWNORMAL;
+
+			using ComHeapPtr<ITEMIDLIST> thisPidl = default;
+			hr = PInvoke.SHGetIDListFromObject(SelectedJumpListItem.ComObject, thisPidl.GetAddressOf());
+
+			fixed (char* pwszVerb = "properties")
+			{
+				info.lpVerb = pwszVerb;
+				info.lpIDList = thisPidl.Get();
+
+				PInvoke.ShellExecuteEx(&info);
+			}
+		}
+
+		private async Task ExecuteOpenCrcHashCalculatorCommand()
+		{
+			var dialog = new Views.CrcCalculatorDialog
+			{
+			};
+
+			await dialog.ShowAsync();
+		}
+
+		private async Task ExecuteOpenAboutDialogCommand()
+		{
+			var dialog = new Views.AboutDialog
+			{
+			};
+
+			await dialog.ShowAsync();
+		}
+	}
+}
