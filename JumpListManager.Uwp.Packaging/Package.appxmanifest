@@ -5,12 +5,12 @@
 	xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
 	IgnorableNamespaces="uap mp rescap">
 
-	<Identity Name="5c189e00-a4b5-42a7-bd3f-29ef6040c0fc" Publisher="CN=onein" Version="1.0.0.0" />
+	<Identity Name="5c189e00-a4b5-42a7-bd3f-29ef6040c0fc" Publisher="CN=0x5BFA" Version="1.0.0.0" />
 
 	<Properties>
 		<DisplayName>JumpListManager.Uwp.Packaging</DisplayName>
-		<PublisherDisplayName>onein</PublisherDisplayName>
-		<Logo>Images\StoreLogo.png</Logo>
+		<PublisherDisplayName>0x5BFA</PublisherDisplayName>
+		<Logo>Assets\StoreLogo.png</Logo>
 	</Properties>
 
 	<mp:PhoneIdentity PhoneProductId="e163079a-67a3-4041-87ec-812efe189332" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
@@ -25,8 +25,8 @@
 
 	<Applications>
 		<Application Id="App"
-			Executable="$targetnametoken$.exe"
-			EntryPoint="JumpListManager.Uwp.App">
+			Executable="JumpListManager.Uwp\JumpListManager.Uwp.exe"
+			EntryPoint="Windows.FullTrustApplication">
 			<uap:VisualElements
 				DisplayName="JumpListManager.Uwp.Packaging"
 				Description="JumpListManager.Uwp.Packaging"

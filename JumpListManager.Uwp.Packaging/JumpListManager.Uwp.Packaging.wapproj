@@ -31,7 +31,6 @@
   </ItemGroup>
   <PropertyGroup>
     <WapProjPath Condition="'$(WapProjPath)'==''">$(MSBuildExtensionsPath)\Microsoft\DesktopBridge\</WapProjPath>
-    <PathToXAMLWinRTImplementations>JumpListManager.Uwp\</PathToXAMLWinRTImplementations>
   </PropertyGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" />
   <PropertyGroup>
@@ -53,10 +52,6 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.1" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\JumpListManager.Uwp\JumpListManager.Uwp.csproj">
-      <UseLowTrustEntryPoint>True</UseLowTrustEntryPoint>
-      <SkipGetTargetFrameworkProperties>True</SkipGetTargetFrameworkProperties>
-      <PublishProfile>Properties\PublishProfiles\win-$(Platform).pubxml</PublishProfile>
-    </ProjectReference>
+    <ProjectReference Include="..\JumpListManager.Uwp\JumpListManager.Uwp.csproj" />
   </ItemGroup>
 </Project>
