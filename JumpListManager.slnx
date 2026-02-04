@@ -9,21 +9,33 @@
   <Folder Name="/.github/">
     <File Path=".github/workflows/ci.yml" />
   </Folder>
-
-  <Project Path="JumpListManager/JumpListManager.csproj">
-    <Platform Solution="*|ARM64" Project="ARM64" />
-    <Platform Solution="*|x64" Project="x64" />
-    <Platform Solution="*|x86" Project="x86" />
-  </Project>
-
-  <Project Path="JumpListManager.WinUI.Packaging/JumpListManager.WinUI.Packaging.wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5">
-    <Deploy />
-  </Project>
-
-  <Project Path="JumpListManager.WinUI/JumpListManager.WinUI.csproj">
-    <Platform Solution="*|ARM64" Project="ARM64" />
-    <Platform Solution="*|x64" Project="x64" />
-    <Platform Solution="*|x86" Project="x86" />
-  </Project>
+  <Folder Name="/samples-uwp/">
+    <Project Path="JumpListManager.Uwp.Packaging/JumpListManager.Uwp.Packaging.wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5" Id="fa4558e2-04fa-40e0-be0a-f3d790e15051">
+      <Deploy />
+    </Project>
+    <Project Path="JumpListManager.Uwp/JumpListManager.Uwp.csproj" Id="74c94d92-5538-458b-ba11-97d90c86cb75">
+      <Platform Solution="*|ARM64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+      <Deploy />
+    </Project>
+  </Folder>
+  <Folder Name="/samples-wasdk/">
+    <Project Path="JumpListManager.WinUI.Packaging/JumpListManager.WinUI.Packaging.wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5">
+      <Deploy />
+    </Project>
+    <Project Path="JumpListManager.WinUI/JumpListManager.WinUI.csproj">
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="JumpListManager/JumpListManager.csproj">
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+  </Folder>
 
 </Solution>
