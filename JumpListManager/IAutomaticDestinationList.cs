@@ -8,16 +8,24 @@ using Windows.Win32.UI.Shell;
 
 namespace Windows.Win32.System.Com
 {
+	// I have reverse engineered this interface via IDA Pro and WinDbg. Name of parameters is determined by how they are used.
 	[GeneratedComInterface, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("E9C5EF8D-FD41-4F72-BA87-EB03BAD5817C")]
 	public unsafe partial interface IAutomaticDestinationList
 	{
+		/// <summary>
+		/// Initializes the instance.
+		/// </summary>
+		/// <param name="appId">Sets AUMID.</param>
+		/// <param name="appFullPath">Sets the full path to the application executable. Used only for unpackaged apps; otherwise, this is NULL.</param>
+		/// <param name="customAutoDestFullFilePath">Sets the full path to the custom auto dest file, if needed. Usually, this is NULL.</param>
+		/// <returns>If succeeded, returns S_OK; otherwise, an HRESULT error code.</returns>
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT Initialize(PCWSTR szAppId, PCWSTR a2, PCWSTR a3);
+		HRESULT Initialize(PCWSTR appId, [Optional] PCWSTR appFullPath, [Optional] PCWSTR customAutoDestFullFilePath);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT HasList([MarshalAs(UnmanagedType.Bool)] out bool pfHasList);
+		HRESULT HasList([MarshalAs(UnmanagedType.Bool)] out bool hasList);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
