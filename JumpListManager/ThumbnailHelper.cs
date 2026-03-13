@@ -139,7 +139,7 @@ namespace JumpListManager
 
 				ulong statSize = stat.cbSize & 0xFFFFFFFF;
 				pRawThumbnailData = (byte*)NativeMemory.Alloc((nuint)statSize);
-				stream.Seek(0L, (SeekOrigin)STREAM_SEEK.STREAM_SEEK_SET, null);
+				stream.Seek(0L, SeekOrigin.Begin, null);
 				hr = stream.Read(pRawThumbnailData, (uint)statSize);
 				if (hr.ThrowOnFailure().Failed)
 					return false;
