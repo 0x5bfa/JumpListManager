@@ -1,12 +1,9 @@
 ﻿// Copyright (c) 0x5BFA. All rights reserved.
 // Licensed under the MIT License.
 
-using Windows.Win32.System.Com;
-using Windows.Win32.UI.Shell;
-
 namespace JumpListManager
 {
-	public unsafe class JumpListItem(JumpListItemType type, byte[]? iconData, string? text, bool isPinned, JumpListDataType dataType, object comObject)
+	public class JumpListItem(JumpListItemType type, byte[]? iconData, string? text, bool isPinned, JumpListDataType dataType, uint accessCount, DateTime lastAccessed, object comObject)
 	{
 		public JumpListItemType Type { get; set; } = type;
 
@@ -18,8 +15,10 @@ namespace JumpListManager
 
 		public JumpListDataType DataType { get; set; } = dataType;
 
-		public object ComObject { get; set; } = comObject;
+		public uint AccessCount { get; set; } = accessCount;
 
-		public IContextMenu ContextMenu { get; set; }
+		public DateTime LastAccessed { get; set; } = lastAccessed;
+
+		public object ComObject { get; set; } = comObject;
 	}
 }

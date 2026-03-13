@@ -10,7 +10,7 @@ namespace Windows.Win32.System.Com
 {
 	// I have reverse engineered this interface via IDA Pro and WinDbg. Name of parameters is determined by how they are used.
 	[GeneratedComInterface, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("E9C5EF8D-FD41-4F72-BA87-EB03BAD5817C")]
-	public unsafe partial interface IAutomaticDestinationList
+	public partial interface IAutomaticDestinationList
 	{
 		/// <summary>
 		/// Initializes the instance.

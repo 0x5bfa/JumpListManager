@@ -1,15 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Package
+﻿<Package
 	xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
 	xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
 	xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
 	xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
 	IgnorableNamespaces="uap rescap">
 
-	<Identity
-		Name="49462fluenthub-uwp.JumpListViewer"
-		Publisher="CN=4E3C0825-4D00-4ECC-89F8-528E9200B125"
-		Version="1.0.0.0" />
+	<Identity Name="49462fluenthub-uwp.JumpListViewer" Publisher="CN=4E3C0825-4D00-4ECC-89F8-528E9200B125" Version="1.0.0.0" />
 
 	<Properties>
 		<DisplayName>Jump List Manager</DisplayName>
@@ -26,10 +22,7 @@
 	</Resources>
 
 	<Applications>
-		<Application
-			Id="App"
-			Executable="$targetnametoken$.exe"
-			EntryPoint="$targetentrypoint$">
+		<Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
 			<uap:VisualElements
 				DisplayName="Jump List Manager"
 				Description="Jump List Manager"

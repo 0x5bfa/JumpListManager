@@ -17,9 +17,9 @@ namespace JumpListManager
 	/// </summary>
 	public unsafe partial class JumpList
 	{
-		private IAutomaticDestinationList _autoDestListPtr = null!;
-		private ICustomDestinationList _customDestListPtr = null!;
-		private IInternalCustomDestinationList _customDestList2Ptr = null!;
+		private IAutomaticDestinationList _autoDestList = null!;
+		private ICustomDestinationList _customDestList = null!;
+		private IInternalCustomDestinationList _customDestList2 = null!;
 
 		private IObjectCollection pinnedItemsObjectCollection = null!;
 
@@ -56,15 +56,15 @@ namespace JumpListManager
 				if (FAILED(hr)) return null;
 			}
 
-			return new() { _autoDestListPtr = autoDestListPtr, _customDestListPtr = customDestListPtr, _customDestList2Ptr = customDestList2Ptr };
+			return new() { _autoDestList = autoDestListPtr, _customDestList = customDestListPtr, _customDestList2 = customDestList2Ptr };
 		}
 
 		public bool HasAutomaticDestinationsOf(DESTLISTTYPE type)
 		{
-			HRESULT hr = _autoDestListPtr.HasList(out var hasList);
+			HRESULT hr = _autoDestList.HasList(out var hasList);
 			if (FAILED(hr) || !hasList) return false;
 
-			hr = _autoDestListPtr.GetList(type, 1, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
+			hr = _autoDestList.GetList(type, 1, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 			if (FAILED(hr)) return false;
 
 			var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -79,7 +79,7 @@ namespace JumpListManager
 		{
 			JumpListGroupItem items = new() { Key = "Pinned" };
 
-			HRESULT hr = _autoDestListPtr.GetList(DESTLISTTYPE.PINNED, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
+			HRESULT hr = _autoDestList.GetList(DESTLISTTYPE.PINNED, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 			if (FAILED(hr)) return null;
 
 			var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -98,7 +98,7 @@ namespace JumpListManager
 
 			JumpListGroupItem items = new() { Key = "Recent" };
 
-			hr = _autoDestListPtr.GetList(DESTLISTTYPE.RECENT, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
+			hr = _autoDestList.GetList(DESTLISTTYPE.RECENT, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 			if (FAILED(hr)) return null;
 
 			var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -111,7 +111,7 @@ namespace JumpListManager
 		{
 			JumpListGroupItem items = new() { Key = "Frequent" };
 
-			HRESULT hr = _autoDestListPtr.GetList(DESTLISTTYPE.FREQUENT, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
+			HRESULT hr = _autoDestList.GetList(DESTLISTTYPE.FREQUENT, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 			if (FAILED(hr)) return null;
 
 			var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -122,7 +122,7 @@ namespace JumpListManager
 
 		public int GetCustomDestinationsCount()
 		{
-			HRESULT hr = _customDestList2Ptr.GetCategoryCount(out var count);
+			HRESULT hr = _customDestList2.GetCategoryCount(out var count);
 			if (FAILED(hr)) return -1;
 
 			return (int)count;
@@ -139,7 +139,7 @@ namespace JumpListManager
 			try
 			{
 				// Get the category data (e.g., the type, the name, and the count of the destinations)
-				hr = _customDestList2Ptr.GetCategory(dwIndex, GETCATFLAG.DEFAULT, out category);
+				hr = _customDestList2.GetCategory(dwIndex, GETCATFLAG.DEFAULT, out category);
 				if (FAILED(hr) || category.Type is not APPDESTCATEGORYTYPE.CUSTOM)
 					return null;
 
@@ -152,7 +152,7 @@ namespace JumpListManager
 				groupedCollection.Key = new string(pszCategoryName);
 
 				// Enumerate the destinations in the category
-				hr = _customDestList2Ptr.EnumerateCategoryDestinations(dwIndex, typeof(IObjectCollection).GUID, out var objectCollectionObj);
+				hr = _customDestList2.EnumerateCategoryDestinations(dwIndex, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 				if (FAILED(hr))
 					return null;
 
@@ -186,12 +186,12 @@ namespace JumpListManager
 				try
 				{
 					// Get the category data (e.g., the type, the name, and the count of the destinations)
-					hr = _customDestList2Ptr.GetCategory(dwCategoryIndex, GETCATFLAG.DEFAULT, out category);
+					hr = _customDestList2.GetCategory(dwCategoryIndex, GETCATFLAG.DEFAULT, out category);
 					if (FAILED(hr) || category.Type is not APPDESTCATEGORYTYPE.TASKS)
 						continue;
 
 					// Enumerate and add the destinations in the category to the list
-					hr = _customDestList2Ptr.EnumerateCategoryDestinations(dwCategoryIndex, typeof(IObjectCollection).GUID, out var objectCollectionObj);
+					hr = _customDestList2.EnumerateCategoryDestinations(dwCategoryIndex, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 					if (FAILED(hr)) return null;
 
 					var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -213,10 +213,10 @@ namespace JumpListManager
 		{
 			HRESULT hr = default;
 
-			hr = _autoDestListPtr.HasList(out var hasList);
+			hr = _autoDestList.HasList(out var hasList);
 			if (FAILED(hr) || !hasList) return false;
 
-			hr = _autoDestListPtr.ClearList(BOOL.TRUE);
+			hr = _autoDestList.ClearList(BOOL.TRUE);
 			if (FAILED(hr)) return false;
 
 			return true;
@@ -229,7 +229,7 @@ namespace JumpListManager
 
 			HRESULT hr = default;
 
-			hr = _autoDestListPtr.PinItem(item.ComObject, -1 /*Pin at the last*/);
+			hr = _autoDestList.PinItem(item.ComObject, -1 /*Pin at the last*/);
 			if (FAILED(hr)) return false;
 
 			item.IsPinned = true;
@@ -243,7 +243,7 @@ namespace JumpListManager
 
 			HRESULT hr = default;
 
-			hr = _autoDestListPtr.PinItem(item.ComObject, -2 /*Unpin*/);
+			hr = _autoDestList.PinItem(item.ComObject, -2 /*Unpin*/);
 			if (FAILED(hr)) return false;
 
 			item.IsPinned = false;
@@ -259,12 +259,12 @@ namespace JumpListManager
 
 			if (item.Type is JumpListItemType.Automatic)
 			{
-				hr = _autoDestListPtr.RemoveDestination(item.ComObject);
+				hr = _autoDestList.RemoveDestination(item.ComObject);
 				if (FAILED(hr)) return false;
 			}
 			else if (item.Type is JumpListItemType.Custom)
 			{
-				hr = _customDestList2Ptr.RemoveDestination(item.ComObject);
+				hr = _customDestList2.RemoveDestination(item.ComObject);
 				if (FAILED(hr)) return false;
 			}
 
@@ -303,7 +303,9 @@ namespace JumpListManager
 				// Get the thumbnail
 				var bitmapImageData = ThumbnailHelper.GetThumbnail(shellItem);
 
-				return new(type, bitmapImageData, new string(pwszName.Get()), IsPinned(shellItem), JumpListDataType.IShellItem, shellItem);
+				_autoDestList.GetUsageData(obj, out var accessCount, out var LastAccessedUtc);
+
+				return new(type, bitmapImageData, new string(pwszName.Get()), IsPinned(shellItem), JumpListDataType.IShellItem, (uint)Math.Round(accessCount), DateTime.FromFileTimeUtc(LastAccessedUtc).ToLocalTime(), shellItem);
 			}
 			else
 			{
@@ -317,7 +319,9 @@ namespace JumpListManager
 					// Get the thumbnail
 					var bitmapImageData = ThumbnailHelper.GetThumbnail(shellLink);
 
-					return new(type, bitmapImageData, new string(pVar.Anonymous.Anonymous.Anonymous.pwszVal), IsPinned(shellLink), JumpListDataType.IShellLink, shellLink);
+					_autoDestList.GetUsageData(obj, out var accessCount, out var LastAccessedUtc);
+
+					return new(type, bitmapImageData, new string(pVar.Anonymous.Anonymous.Anonymous.pwszVal), IsPinned(shellLink), JumpListDataType.IShellLink, (uint)Math.Round(accessCount), DateTime.FromFileTimeUtc(LastAccessedUtc).ToLocalTime(), shellLink);
 				}
 				else
 				{
@@ -332,7 +336,7 @@ namespace JumpListManager
 
 			if (pinnedItemsObjectCollection is null)
 			{
-				hr = _autoDestListPtr.GetList(DESTLISTTYPE.PINNED, 20, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
+				hr = _autoDestList.GetList(DESTLISTTYPE.PINNED, 20, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 				if (FAILED(hr)) return false;
 
 				pinnedItemsObjectCollection = (IObjectCollection)objectCollectionObj;
