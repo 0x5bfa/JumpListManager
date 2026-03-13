@@ -34,13 +34,13 @@ namespace JumpListManager
 
 			HRESULT hr = default;
 
-			hr = PInvoke.CoCreateInstance(*CLSID.CLSID_AutomaticDestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out IAutomaticDestinationList autoDestListPtr).ThrowOnFailure();
+			hr = PInvoke.CoCreateInstance(PInvoke.CLSID_AutomaticDestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out IAutomaticDestinationList autoDestListPtr).ThrowOnFailure();
 			if (FAILED(hr)) return null;
 
-			hr = PInvoke.CoCreateInstance(*CLSID.CLSID_DestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out ICustomDestinationList customDestListPtr).ThrowOnFailure();
+			hr = PInvoke.CoCreateInstance(PInvoke.CLSID_DestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out ICustomDestinationList customDestListPtr).ThrowOnFailure();
 			if (FAILED(hr)) return null;
 
-			hr = PInvoke.CoCreateInstance(*CLSID.CLSID_DestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out IInternalCustomDestinationList customDestList2Ptr).ThrowOnFailure();
+			hr = PInvoke.CoCreateInstance(PInvoke.CLSID_DestinationList, null, CLSCTX.CLSCTX_INPROC_SERVER, out IInternalCustomDestinationList customDestList2Ptr).ThrowOnFailure();
 			if (FAILED(hr)) return null;
 
 			hr = customDestListPtr.SetAppID(szAppId).ThrowOnFailure();
@@ -64,7 +64,7 @@ namespace JumpListManager
 			HRESULT hr = _autoDestListPtr.HasList(out var hasList);
 			if (FAILED(hr) || !hasList) return false;
 
-			hr = _autoDestListPtr.GetList(type, 1, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+			hr = _autoDestListPtr.GetList(type, 1, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 			if (FAILED(hr)) return false;
 
 			var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -79,7 +79,7 @@ namespace JumpListManager
 		{
 			JumpListGroupItem items = new() { Key = "Pinned" };
 
-			HRESULT hr = _autoDestListPtr.GetList(DESTLISTTYPE.PINNED, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+			HRESULT hr = _autoDestListPtr.GetList(DESTLISTTYPE.PINNED, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 			if (FAILED(hr)) return null;
 
 			var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -98,7 +98,7 @@ namespace JumpListManager
 
 			JumpListGroupItem items = new() { Key = "Recent" };
 
-			hr = _autoDestListPtr.GetList(DESTLISTTYPE.RECENT, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+			hr = _autoDestListPtr.GetList(DESTLISTTYPE.RECENT, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 			if (FAILED(hr)) return null;
 
 			var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -111,7 +111,7 @@ namespace JumpListManager
 		{
 			JumpListGroupItem items = new() { Key = "Frequent" };
 
-			HRESULT hr = _autoDestListPtr.GetList(DESTLISTTYPE.FREQUENT, count, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+			HRESULT hr = _autoDestListPtr.GetList(DESTLISTTYPE.FREQUENT, count, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 			if (FAILED(hr)) return null;
 
 			var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -152,7 +152,7 @@ namespace JumpListManager
 				groupedCollection.Key = new string(pszCategoryName);
 
 				// Enumerate the destinations in the category
-				hr = _customDestList2Ptr.EnumerateCategoryDestinations(dwIndex, IID.IID_IObjectCollection, out var objectCollectionObj);
+				hr = _customDestList2Ptr.EnumerateCategoryDestinations(dwIndex, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 				if (FAILED(hr))
 					return null;
 
@@ -191,7 +191,7 @@ namespace JumpListManager
 						continue;
 
 					// Enumerate and add the destinations in the category to the list
-					hr = _customDestList2Ptr.EnumerateCategoryDestinations(dwCategoryIndex, IID.IID_IObjectCollection, out var objectCollectionObj);
+					hr = _customDestList2Ptr.EnumerateCategoryDestinations(dwCategoryIndex, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 					if (FAILED(hr)) return null;
 
 					var objectCollection = (IObjectCollection)objectCollectionObj;
@@ -279,7 +279,7 @@ namespace JumpListManager
 			List<JumpListItem> items = [];
 			for (uint dwIndex = 0U; dwIndex < pcObjects; dwIndex++)
 			{
-				hr = objectCollection.GetAt(dwIndex, IID.IID_IUnknown, out var itemObj);
+				hr = objectCollection.GetAt(dwIndex, IUnknown.IID_Guid, out var itemObj);
 				if (FAILED(hr)) continue;
 
 				if (CreateItemFromIUnknown(type, itemObj) is { } item)
@@ -332,7 +332,7 @@ namespace JumpListManager
 
 			if (pinnedItemsObjectCollection is null)
 			{
-				hr = _autoDestListPtr.GetList(DESTLISTTYPE.PINNED, 20, GETDESTLISTFLAGS.NONE, IID.IID_IObjectCollection, out var objectCollectionObj);
+				hr = _autoDestListPtr.GetList(DESTLISTTYPE.PINNED, 20, GETDESTLISTFLAGS.NONE, typeof(IObjectCollection).GUID, out var objectCollectionObj);
 				if (FAILED(hr)) return false;
 
 				pinnedItemsObjectCollection = (IObjectCollection)objectCollectionObj;
@@ -343,7 +343,7 @@ namespace JumpListManager
 
 			for (uint dwIndex = 0U; dwIndex < cPinnedObjects; dwIndex++)
 			{
-				hr = pinnedItemsObjectCollection.GetAt(dwIndex, IID.IID_IUnknown, out var pinnedItemObj);
+				hr = pinnedItemsObjectCollection.GetAt(dwIndex, IUnknown.IID_Guid, out var pinnedItemObj);
 
 				if (IsSameObject(pinnedItemObj, obj))
 					return true;

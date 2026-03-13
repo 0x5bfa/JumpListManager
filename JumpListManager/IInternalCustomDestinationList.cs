@@ -37,7 +37,7 @@ namespace Windows.Win32.System.Com
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT EnumerateCategoryDestinations(uint index, Guid* riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
+		HRESULT EnumerateCategoryDestinations(uint index, in Guid riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]

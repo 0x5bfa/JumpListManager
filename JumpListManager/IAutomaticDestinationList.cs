@@ -29,7 +29,7 @@ namespace Windows.Win32.System.Com
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT GetList(DESTLISTTYPE type, int maxCount, GETDESTLISTFLAGS flags, Guid* riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
+		HRESULT GetList(DESTLISTTYPE type, int maxCount, GETDESTLISTFLAGS flags, in Guid riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
@@ -57,7 +57,7 @@ namespace Windows.Win32.System.Com
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]
-		HRESULT ResolveDestination(HWND hWnd, int a2, [MarshalAs(UnmanagedType.Interface)] IShellItem psi, Guid* riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
+		HRESULT ResolveDestination(HWND hWnd, int a2, [MarshalAs(UnmanagedType.Interface)] IShellItem psi, in Guid riid, [MarshalAs(UnmanagedType.Interface)] out object ppv);
 
 		[PreserveSig]
 		[return: MarshalAs(UnmanagedType.Error)]

@@ -77,7 +77,7 @@ namespace JumpListManager.ViewModels
 			var shellItem = (IShellItem)shellItemObj;
 
 			// Get the enumerator of the shell folder
-			hr = shellItem.BindToHandler(null, BHID.BHID_EnumItems, IID.IID_IEnumShellItems, out var enumShellItemsObj);
+			hr = shellItem.BindToHandler(null, PInvoke.BHID_EnumItems, typeof(IEnumShellItems).GUID, out var enumShellItemsObj);
 			var enumShellItems = (IEnumShellItems)enumShellItemsObj;
 
 			// Enumerate all child items one by one
@@ -91,7 +91,7 @@ namespace JumpListManager.ViewModels
 				hr = childItem.GetDisplayName(SIGDN.SIGDN_PARENTRELATIVEFORUI, (PWSTR*)pName.GetAddressOf());
 
 				// Get the AMUID from the property store of the item
-				hr = childItem.BindToHandler(null, BHID.BHID_PropertyStore, IID.IID_IPropertyStore, out var propertyStoreObj);
+				hr = childItem.BindToHandler(null, PInvoke.BHID_PropertyStore, typeof(IPropertyStore).GUID, out var propertyStoreObj);
 
 				var propertyStore = (IPropertyStore)propertyStoreObj;
 
