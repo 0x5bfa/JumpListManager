@@ -22,11 +22,11 @@ run-name: ${{ github.event_name == 'pull_request' && 'JumpListManager PR Validat
 env:
   WORKING_DIR:           '${{ github.workspace }}' # 'D:\a\JumpListManager\JumpListManager'
   SOLUTION_PATH:         '${{ github.workspace }}\JumpListManager.slnx'
-  WASDK_PROJ_PATH:       '${{ github.workspace }}\JumpListManager.WinUI\JumpListManager.WinUI.csproj'
-  UWP_PROJ_PATH:         '${{ github.workspace }}\JumpListManager.Uwp\JumpListManager.Uwp.csproj'
+  WASDK_PROJ_PATH:       '${{ github.workspace }}\JumpListManager.Samples.WinUI\JumpListManager.Samples.WinUI.csproj'
+  UWP_PROJ_PATH:         '${{ github.workspace }}\JumpListManager.Samples.Uwp\JumpListManager.Samples.Uwp.csproj'
 
 jobs:
-  build:
+  build-wasdk:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -50,5 +50,26 @@ jobs:
     - name: Build the WASDK sample
       run: msbuild /restore $env:ENTRYPOINT_PROJ_PATH /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /p:AppxBundle=Never
 
-    - name: Build the UWP sample
+  build-uwp:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+        platform: [x64, ARM64]
+    env:
+      CONFIGURATION: ${{ matrix.configuration }}
+      PLATFORM: ${{ matrix.platform }}
+
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+
+    - name: Build the sample
       run: msbuild /restore $env:UWP_PROJ_PATH /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /p:AppxBundle=Never

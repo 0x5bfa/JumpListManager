@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
 
 env:
-  WORKING_DIR:         '${{ github.workspace }}' # 'D:\a\JumpListManager\JumpListManager'
-  SOLUTION_PATH:       '${{ github.workspace }}\JumpListManager.slnx'
-  WAPPROJ_PATH:        '${{ github.workspace }}\JumpListManager.WinUI.Packaging\JumpListManager.WinUI.Packaging.wapproj'
-  MSIXUPLOAD_PATH:     '${{ github.workspace }}\JumpListManager.WinUI.Packaging\AppPackages\**\*.msixupload'
+  WORKING_DIR:           '${{ github.workspace }}' # 'D:\a\JumpListManager\JumpListManager'
+  SOLUTION_PATH:         '${{ github.workspace }}\JumpListManager.slnx'
+  WASDK_PROJ_PATH:       '${{ github.workspace }}\JumpListManager.Samples.WinUI\JumpListManager.Samples.WinUI.csproj'
+  UWP_PROJ_PATH:         '${{ github.workspace }}\JumpListManager.Samples.Uwp\JumpListManager.Samples.Uwp.csproj'
 
 jobs:
 
@@ -30,11 +30,5 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
 
-    - name: Build and package the solution
-      run: msbuild /restore $env:WAPPROJ_PATH /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /p:UapAppxPackageBuildMode=CI
-
-    - name: Upload the msixupload to GitHub Actions
-      uses: actions/upload-artifact@v4
-      with:
-        name: 'Packaged msixupload'
-        path: ${{ env.MSIXUPLOAD_PATH }}
+    - name: Build the WASDK sample
+      run: msbuild /restore $env:ENTRYPOINT_PROJ_PATH /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /p:AppxBundle=Never

@@ -9,14 +9,16 @@
   <Folder Name="/.github/">
     <File Path=".github/workflows/ci.yml" />
   </Folder>
+
   <Folder Name="/samples/">
-    <Project Path="JumpListManager.Uwp/JumpListManager.Uwp.csproj" Id="74c94d92-5538-458b-ba11-97d90c86cb75">
+    <Project Path="JumpListManager.Samples.Shared/JumpListManager.Samples.Shared.shproj" />
+    <Project Path="JumpListManager.Samples.Uwp/JumpListManager.Samples.Uwp.csproj">
       <Platform Solution="*|ARM64" Project="arm64" />
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|x86" Project="x86" />
       <Deploy />
     </Project>
-    <Project Path="JumpListManager.WinUI/JumpListManager.WinUI.csproj">
+    <Project Path="JumpListManager.Samples.WinUI/JumpListManager.Samples.WinUI.csproj">
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|x86" Project="x86" />

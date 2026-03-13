@@ -5,8 +5,14 @@ namespace JumpListManager
 {
 	public enum JumpListDataType
 	{
-		IShellItem,
+		/// <summary>
+		/// IShellItem
+		/// </summary>
+		Item,
 
-		IShellLink
+		/// <summary>
+		/// IShellLinkW
+		/// </summary>
+		Link
 	}
 }

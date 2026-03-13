@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<Nullable>enable</Nullable>
+		<UseUwp>true</UseUwp>
+		<UseUwpTools>true</UseUwpTools>
+		<Platforms>x86;x64;arm64</Platforms>
+		<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+		<DefaultLanguage>en-US</DefaultLanguage>
+		<PublishAot>true</PublishAot>
+		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
+		<DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
+		<EnableMsixTooling>true</EnableMsixTooling>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DefineConstants>$(DefineConstants);UWP</DefineConstants>
+		<LangVersion>preview</LangVersion>
+	</PropertyGroup>
+	
+	<ItemGroup>
+	  <AppxManifest Include="Package.appxmanifest">
+	    <SubType>Designer</SubType>
+	  </AppxManifest>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\JumpListManager\JumpListManager.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="CommunityToolkit.Uwp.Converters" Version="8.2.250402" />
+		<PackageReference Include="Microsoft.UI.Xaml" Version="2.8.7" />
+	</ItemGroup>
+
+	<Import Project="..\JumpListManager.Samples.Shared\JumpListManager.Samples.Shared.projitems" Label="Shared" />
+
+</Project>
